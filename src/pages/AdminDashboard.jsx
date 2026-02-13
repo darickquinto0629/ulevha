@@ -20,7 +20,7 @@ export default function AdminDashboard() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Ulevha Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">ULEVHA Admin Dashboard</h1>
             <p className="text-gray-600 text-sm mt-1">Welcome back, {user?.name}</p>
           </div>
           <div className="flex items-center gap-4">

@@ -18,4 +18,25 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    // Vite dev server
+    host: '127.0.0.1',
+    port: 5173,
+    // Proxy API requests to backend
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
+        rewrite: (path) => path,
+        ws: true,
+      },
+    },
+  },
+  build: {
+    // Optimize build output
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'terser',
+    chunkSizeWarningLimit: 500,
+  },
 })

@@ -1,29 +1,91 @@
 import React, { createContext, useState, useCallback, useEffect } from 'react';
+import { getApiUrl, apiCall } from '@/lib/apiConfig';
 
 const AuthContext = createContext();
 
-const API_URL = 'http://localhost:3000/api';
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  // Start with loading=true if we have a token to verify, false otherwise
+  const [loading, setLoading] = useState(() => !!localStorage.getItem('token'));
   const [error, setError] = useState(null);
 
-  // Initialize auth state on mount
+  // Initialize auth state on mount - verify stored token
   useEffect(() => {
-    if (token) {
-      verifyToken();
-    }
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      console.log('[AuthContext] initializeAuth running, token exists:', !!storedToken);
+      
+      if (!storedToken) {
+        console.log('[AuthContext] No token found, skipping verification');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const apiUrl = getApiUrl();
+        console.log('[AuthContext] Verifying token with URL:', apiUrl + '/auth/verify');
+        
+        const response = await fetch(`${apiUrl}/auth/verify`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${storedToken}`,
+          },
+        });
+
+        console.log('[AuthContext] Verify response status:', response.status);
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          console.log('[AuthContext] Verify failed:', response.status, errData);
+          localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('[AuthContext] Verify succeeded, user:', data.data?.email);
+        
+        if (data.success) {
+          setToken(storedToken);
+          setUser(data.data);
+          console.log('[AuthContext] State updated - token and user set, loading->false');
+        } else {
+          console.log('[AuthContext] Verify returned false success');
+          localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('[AuthContext] Token verification failed with error:', err);
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+        console.log('[AuthContext] Loading set to false');
+      }
+    };
+
+    initializeAuth();
   }, []);
 
-  // Verify token on app load
-  const verifyToken = useCallback(async () => {
+  // Verify token - called when needed, doesn't depend on state
+  const verifyToken = useCallback(async (tokenToVerify) => {
+    const verifyTokenValue = tokenToVerify || localStorage.getItem('token');
+    if (!verifyTokenValue) return;
+
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/auth/verify`, {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/auth/verify`, {
+        method: 'GET',
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${verifyTokenValue}`,
         },
       });
 
@@ -39,14 +101,14 @@ export const AuthProvider = ({ children }) => {
         setUser(data.data);
       }
     } catch (err) {
-      console.error('Token verification failed:', err);
+      console.error('[AuthContext] Token verification failed:', err);
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   // Login function
   const login = useCallback(async (email, password) => {
@@ -54,7 +116,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +128,9 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        const errorMsg = data.error || 'Login failed';
+        console.error('[AuthContext] Login failed:', errorMsg);
+        throw new Error(errorMsg);
       }
 
       if (data.success) {
@@ -73,11 +138,13 @@ export const AuthProvider = ({ children }) => {
         setToken(newToken);
         setUser(userData);
         localStorage.setItem('token', newToken);
+        console.log('[AuthContext] Login successful:', userData.email);
         return { success: true, data };
       }
     } catch (err) {
       const errorMsg = err.message || 'Login failed';
       setError(errorMsg);
+      console.error('[AuthContext] Login error:', errorMsg);
       return { success: false, error: errorMsg };
     } finally {
       setLoading(false);
@@ -90,7 +157,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,13 +169,17 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+        const errorMsg = data.error || 'Registration failed';
+        console.error('[AuthContext] Registration failed:', errorMsg);
+        throw new Error(errorMsg);
       }
 
+      console.log('[AuthContext] Registration successful');
       return { success: true, data };
     } catch (err) {
       const errorMsg = err.message || 'Registration failed';
       setError(errorMsg);
+      console.error('[AuthContext] Registration error:', errorMsg);
       return { success: false, error: errorMsg };
     } finally {
       setLoading(false);
