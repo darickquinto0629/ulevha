@@ -86,6 +86,35 @@ const initializeDatabase = () => {
       }
     );
 
+    // Create Residents table
+    db.run(
+      `CREATE TABLE IF NOT EXISTS residents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        household_number TEXT UNIQUE NOT NULL,
+        resident_id TEXT UNIQUE NOT NULL,
+        philsys_number TEXT,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        middle_name TEXT,
+        gender TEXT NOT NULL,
+        date_of_birth DATE NOT NULL,
+        birth_place TEXT,
+        age INTEGER,
+        address TEXT NOT NULL,
+        contact_number TEXT,
+        civil_status TEXT,
+        religion TEXT,
+        educational_attainment TEXT,
+        educational_attainment_other TEXT,
+        is_active BOOLEAN DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`,
+      (err) => {
+        if (err) console.error('Error creating residents table:', err);
+      }
+    );
+
     // Insert default roles if they don't exist
     db.run(
       `INSERT OR IGNORE INTO roles (id, name, description) VALUES 

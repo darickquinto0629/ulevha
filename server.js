@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import db from './backend/database/db.js';
 import authRoutes from './backend/routes/authRoutes.js';
 import userRoutes from './backend/routes/userRoutes.js';
+import residentRoutes from './backend/routes/residentRoutes.js';
 
 dotenv.config();
 
@@ -62,6 +63,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/residents', residentRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

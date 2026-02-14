@@ -41,7 +41,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-3xl font-bold text-gray-900">Ulevha</CardTitle>
+          <CardTitle className="text-3xl uppercase font-bold text-gray-900">Ulevha</CardTitle>
           <CardDescription className="text-base">
             Executive Village Home Owners Association
           </CardDescription>

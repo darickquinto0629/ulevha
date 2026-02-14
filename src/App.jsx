@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import LoginPage from '@/pages/LoginPage';
-import AdminDashboard from '@/pages/AdminDashboard';
-import StaffDashboard from '@/pages/StaffDashboard';
+import AdminLayout from '@/layouts/AdminLayout';
+import StaffLayout from '@/layouts/StaffLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import './App.css';
 
@@ -19,10 +19,7 @@ function App() {
             path="/admin/*"
             element={
               <ProtectedRoute requiredRole="admin">
-                <Routes>
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route path="*" element={<Navigate to="dashboard" replace />} />
-                </Routes>
+                <AdminLayout />
               </ProtectedRoute>
             }
           />
@@ -32,10 +29,7 @@ function App() {
             path="/staff/*"
             element={
               <ProtectedRoute requiredRole="staff">
-                <Routes>
-                  <Route path="dashboard" element={<StaffDashboard />} />
-                  <Route path="*" element={<Navigate to="dashboard" replace />} />
-                </Routes>
+                <StaffLayout />
               </ProtectedRoute>
             }
           />
