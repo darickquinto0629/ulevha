@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiUrl } from '@/lib/apiConfig';
 
-export default function ResidentList({ onEdit, searchQuery = '' }) {
+export default function ResidentList({ onEdit, searchQuery = '', isAdmin = false }) {
   const { token } = useAuth();
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -107,17 +107,15 @@ export default function ResidentList({ onEdit, searchQuery = '' }) {
         <CardTitle>Residents List</CardTitle>
       </CardHeader>
       <CardContent>
-        {error && <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4">{error}</div>}
+        {error && <div className="message-error mb-4">{error}</div>}
 
         {residents.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No residents found
-          </div>
+          <div className="text-center py-8 text-gray-500">No residents found</div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="table-container">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="table-header border-b">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold">Name</th>
                     <th className="px-4 py-2 text-left font-semibold">Household #</th>
@@ -129,27 +127,23 @@ export default function ResidentList({ onEdit, searchQuery = '' }) {
                 </thead>
                 <tbody>
                   {residents.map((resident) => (
-                    <tr key={resident.id} className="border-b hover:bg-gray-50">
+                    <tr key={resident.id} className="border-b table-row-hover">
                       <td className="px-4 py-2">
-                        {resident.first_name} {resident.middle_name} {resident.last_name}
+                        {resident.last_name}, {resident.first_name}{resident.middle_name ? `, ${resident.middle_name}` : ''}
                       </td>
                       <td className="px-4 py-2">{resident.household_number}</td>
                       <td className="px-4 py-2">{resident.age}</td>
                       <td className="px-4 py-2">{resident.contact_number || '-'}</td>
                       <td className="px-4 py-2">{resident.civil_status || '-'}</td>
                       <td className="px-4 py-2 space-x-2">
-                        <button
-                          onClick={() => onEdit(resident)}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
+                        <button onClick={() => onEdit(resident)} className="text-blue-600 hover:text-blue-800 text-sm">
                           Edit
                         </button>
-                        <button
-                          onClick={() => setDeleteConfirm(resident.id)}
-                          className="text-red-600 hover:text-red-800 text-sm"
-                        >
-                          Delete
-                        </button>
+                        {isAdmin && (
+                          <button onClick={() => setDeleteConfirm(resident.id)} className="text-red-600 hover:text-red-800 text-sm">
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -158,13 +152,13 @@ export default function ResidentList({ onEdit, searchQuery = '' }) {
             </div>
 
             {/* Pagination */}
-            <div className="mt-4 flex items-center justify-between">
+            <div className="pagination">
               <div className="flex items-center gap-2">
                 <span className="text-sm">Page Size:</span>
                 <select
                   value={pagination.pageSize}
                   onChange={(e) => handlePageSizeChange(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="form-select w-auto"
                 >
                   <option value="5">5</option>
                   <option value="10">10</option>
@@ -173,11 +167,11 @@ export default function ResidentList({ onEdit, searchQuery = '' }) {
                 </select>
               </div>
 
-              <div className="text-sm text-gray-600">
+              <div className="pagination-info">
                 Page {pagination.currentPage} of {pagination.pages} ({pagination.total} total)
               </div>
 
-              <div className="flex gap-2">
+              <div className="pagination-buttons">
                 <Button
                   onClick={() => handlePageChange(pagination.currentPage - 1)}
                   disabled={pagination.currentPage === 1}
@@ -206,18 +200,8 @@ export default function ResidentList({ onEdit, searchQuery = '' }) {
               <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
               <p className="text-gray-600 mb-6">Are you sure you want to delete this resident?</p>
               <div className="flex gap-2 justify-end">
-                <Button
-                  onClick={() => setDeleteConfirm(null)}
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleDelete(deleteConfirm)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Delete
-                </Button>
+                <Button onClick={() => setDeleteConfirm(null)} variant="outline">Cancel</Button>
+                <Button onClick={() => handleDelete(deleteConfirm)} className="bg-red-600 hover:bg-red-700">Delete</Button>
               </div>
             </div>
           </div>

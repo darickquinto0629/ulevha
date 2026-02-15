@@ -33,7 +33,7 @@ export const getAllUsers = async (req, res) => {
     const { page = 1, limit = 20, role, search } = req.query;
     const offset = (page - 1) * limit;
 
-    let query = `SELECT u.id, u.name, u.email, u.role_id, u.age, u.gender, u.address, u.phone, u.is_active, u.created_at, r.name as role 
+    let query = `SELECT u.id, u.name, u.email, u.role_id, u.date_of_birth, u.gender, u.address, u.phone, u.is_active, u.created_at, r.name as role 
                  FROM users u 
                  JOIN roles r ON u.role_id = r.id 
                  WHERE 1=1`;
@@ -57,8 +57,8 @@ export const getAllUsers = async (req, res) => {
     const countResult = await dbGet(countQuery, params);
     const total = countResult.total;
 
-    // Get paginated results
-    query += ` ORDER BY u.created_at DESC LIMIT ? OFFSET ?`;
+    // Get paginated results - sort by role (admin first) then by name
+    query += ` ORDER BY CASE WHEN r.name = 'admin' THEN 0 ELSE 1 END, u.name ASC LIMIT ? OFFSET ?`;
     const users = await dbAll(query, [...params, parseInt(limit), offset]);
 
     res.status(200).json({
@@ -89,7 +89,7 @@ export const getUserById = async (req, res) => {
     const { id } = req.params;
 
     const user = await dbGet(
-      `SELECT u.id, u.name, u.email, u.age, u.gender, u.address, u.phone, u.is_active, u.created_at, u.updated_at, r.name as role 
+      `SELECT u.id, u.name, u.email, u.date_of_birth, u.gender, u.address, u.phone, u.is_active, u.created_at, u.updated_at, r.name as role 
        FROM users u 
        JOIN roles r ON u.role_id = r.id 
        WHERE u.id = ?`,
@@ -120,12 +120,19 @@ export const getUserById = async (req, res) => {
 // Create user (Admin only)
 export const createUser = async (req, res) => {
   try {
-    const { name, email, password, role = 'staff', age, gender, address, phone } = req.body;
+    const { name, email, password, role = 'staff', date_of_birth, gender, address, phone } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
         error: 'Name, email, and password are required',
+      });
+    }
+
+    if (!date_of_birth || !gender || !address || !phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Date of birth, gender, address, and phone are required',
       });
     }
 
@@ -153,9 +160,9 @@ export const createUser = async (req, res) => {
 
     // Create user
     const result = await dbRun(
-      `INSERT INTO users (name, email, password, role_id, age, gender, address, phone)
+      `INSERT INTO users (name, email, password, role_id, date_of_birth, gender, address, phone)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, hashedPassword, roleData.id, age || null, gender || null, address || null, phone || null]
+      [name, email, hashedPassword, roleData.id, date_of_birth || null, gender || null, address || null, phone || null]
     );
 
     // Log action
@@ -194,7 +201,7 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, age, gender, address, phone, is_active } = req.body;
+    const { name, email, password, date_of_birth, gender, address, phone, is_active } = req.body;
 
     // Check if user exists
     const user = await dbGet('SELECT id FROM users WHERE id = ?', [id]);
@@ -228,9 +235,15 @@ export const updateUser = async (req, res) => {
       updates.push('email = ?');
       params.push(email);
     }
-    if (age !== undefined) {
-      updates.push('age = ?');
-      params.push(age || null);
+    if (password) {
+      const bcryptjs = await import('bcryptjs');
+      const hashedPassword = await bcryptjs.default.hash(password, 10);
+      updates.push('password = ?');
+      params.push(hashedPassword);
+    }
+    if (date_of_birth !== undefined) {
+      updates.push('date_of_birth = ?');
+      params.push(date_of_birth || null);
     }
     if (gender) {
       updates.push('gender = ?');

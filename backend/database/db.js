@@ -39,7 +39,7 @@ const initializeDatabase = () => {
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role_id INTEGER NOT NULL,
-        age INTEGER,
+        date_of_birth TEXT,
         gender TEXT,
         address TEXT,
         phone TEXT,
@@ -90,7 +90,7 @@ const initializeDatabase = () => {
     db.run(
       `CREATE TABLE IF NOT EXISTS residents (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        household_number TEXT UNIQUE NOT NULL,
+        household_number TEXT NOT NULL,
         resident_id TEXT UNIQUE NOT NULL,
         philsys_number TEXT,
         first_name TEXT NOT NULL,

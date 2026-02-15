@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiUrl } from '@/lib/apiConfig';
 
-export default function ResidentForm({ resident, onSubmit, isLoading }) {
+export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }) {
   const { token } = useAuth();
   const [formData, setFormData] = useState({
     household_number: '',
@@ -24,6 +24,7 @@ export default function ResidentForm({ resident, onSubmit, isLoading }) {
   });
 
   const [errors, setErrors] = useState({});
+  const [showAddNewConfirm, setShowAddNewConfirm] = useState(false);
 
   useEffect(() => {
     if (resident) {
@@ -50,12 +51,14 @@ export default function ResidentForm({ resident, onSubmit, isLoading }) {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    // Convert text fields to uppercase (exclude date, tel, select, radio)
+    const shouldUppercase = type === 'text' || type === 'textarea';
+    const processedValue = shouldUppercase ? value.toUpperCase() : value;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -66,13 +69,13 @@ export default function ResidentForm({ resident, onSubmit, isLoading }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     await onSubmit(formData);
   };
+
+  // Helper to get input class based on error state
+  const inputClass = (field) => errors[field] ? 'form-input-error' : 'form-input';
+  const selectClass = (field) => errors[field] ? 'form-select-error' : 'form-select';
 
   return (
     <Card>
@@ -82,123 +85,122 @@ export default function ResidentForm({ resident, onSubmit, isLoading }) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Household and IDs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Household Number *</label>
+          <div className="grid-2-cols">
+            <div className="form-group">
+              <label className="form-label">Household Number *</label>
               <input
                 type="text"
                 name="household_number"
                 value={formData.household_number}
                 onChange={handleInputChange}
-                // disabled={resident}
-                className={`w-full px-3 py-2 border rounded-md ${errors.household_number ? 'border-red-500' : 'border-gray-300'}`}
+                className={inputClass('household_number')}
                 placeholder="e.g., HH-001"
               />
-              {errors.household_number && <p className="text-red-500 text-xs mt-1">{errors.household_number}</p>}
+              {errors.household_number && <p className="form-error">{errors.household_number}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">PhilSys Card Number</label>
+            <div className="form-group">
+              <label className="form-label">PhilSys Card Number</label>
               <input
                 type="text"
                 name="philsys_number"
                 value={formData.philsys_number}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="form-input"
                 placeholder="Optional"
               />
             </div>
           </div>
 
           {/* Name Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">First Name *</label>
+          <div className="grid-3-cols">
+            <div className="form-group">
+              <label className="form-label">First Name *</label>
               <input
                 type="text"
                 name="first_name"
                 value={formData.first_name}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md ${errors.first_name ? 'border-red-500' : 'border-gray-300'}`}
+                className={inputClass('first_name')}
               />
-              {errors.first_name && <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>}
+              {errors.first_name && <p className="form-error">{errors.first_name}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Middle Name</label>
+            <div className="form-group">
+              <label className="form-label">Middle Name</label>
               <input
                 type="text"
                 name="middle_name"
                 value={formData.middle_name}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="form-input"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Last Name *</label>
+            <div className="form-group">
+              <label className="form-label">Last Name *</label>
               <input
                 type="text"
                 name="last_name"
                 value={formData.last_name}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md ${errors.last_name ? 'border-red-500' : 'border-gray-300'}`}
+                className={inputClass('last_name')}
               />
-              {errors.last_name && <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>}
+              {errors.last_name && <p className="form-error">{errors.last_name}</p>}
             </div>
           </div>
 
           {/* Personal Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Gender *</label>
+          <div className="grid-2-cols">
+            <div className="form-group">
+              <label className="form-label">Gender *</label>
               <select
                 name="gender"
                 value={formData.gender}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md ${errors.gender ? 'border-red-500' : 'border-gray-300'}`}
+                className={selectClass('gender')}
               >
                 <option value="">Select Gender</option>
                 <option value="M">Male</option>
                 <option value="F">Female</option>
                 <option value="Other">Other</option>
               </select>
-              {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
+              {errors.gender && <p className="form-error">{errors.gender}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Date of Birth *</label>
+            <div className="form-group">
+              <label className="form-label">Date of Birth *</label>
               <input
                 type="date"
                 name="date_of_birth"
                 value={formData.date_of_birth}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md ${errors.date_of_birth ? 'border-red-500' : 'border-gray-300'}`}
+                className={inputClass('date_of_birth')}
               />
-              {errors.date_of_birth && <p className="text-red-500 text-xs mt-1">{errors.date_of_birth}</p>}
+              {errors.date_of_birth && <p className="form-error">{errors.date_of_birth}</p>}
             </div>
           </div>
 
           {/* Birth Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Birth Place</label>
+          <div className="grid-2-cols">
+            <div className="form-group">
+              <label className="form-label">Birth Place</label>
               <input
                 type="text"
                 name="birth_place"
                 value={formData.birth_place}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="form-input"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Civil Status</label>
+            <div className="form-group">
+              <label className="form-label">Civil Status</label>
               <select
                 name="civil_status"
                 value={formData.civil_status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="form-select"
               >
                 <option value="Single">Single</option>
                 <option value="Married">Married</option>
@@ -208,50 +210,48 @@ export default function ResidentForm({ resident, onSubmit, isLoading }) {
             </div>
           </div>
 
-          {/* Address and Contact */}
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Address *</label>
-              <textarea
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
-                rows="3"
-              />
-              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-            </div>
+          {/* Address */}
+          <div className="form-group">
+            <label className="form-label">Address *</label>
+            <textarea
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              className={inputClass('address')}
+              rows="3"
+            />
+            {errors.address && <p className="form-error">{errors.address}</p>}
           </div>
 
           {/* Contact and Religion */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Contact Number</label>
+          <div className="grid-2-cols">
+            <div className="form-group">
+              <label className="form-label">Contact Number</label>
               <input
                 type="tel"
                 name="contact_number"
                 value={formData.contact_number}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="form-input"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Religion</label>
+            <div className="form-group">
+              <label className="form-label">Religion</label>
               <input
                 type="text"
                 name="religion"
                 value={formData.religion}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="form-input"
               />
             </div>
           </div>
 
           {/* Educational Attainment */}
-          <div className="space-y-3">
-            <label className="block text-sm font-medium">Highest Educational Attainment</label>
-            <div className="space-y-2">
+          <div className="form-group">
+            <label className="form-label">Highest Educational Attainment</label>
+            <div className="space-y-2 mt-2">
               {['Elementary', 'Highschool', 'College Undergraduate', 'College Graduate', 'Post Graduate', 'Vocational', 'Others please specify'].map((option) => (
                 <label key={option} className="flex items-center">
                   <input
@@ -268,31 +268,57 @@ export default function ResidentForm({ resident, onSubmit, isLoading }) {
             </div>
 
             {formData.educational_attainment === 'Others please specify' && (
-              <div>
+              <div className="mt-2">
                 <input
                   type="text"
                   name="educational_attainment_other"
                   value={formData.educational_attainment_other}
                   onChange={handleInputChange}
                   placeholder="Please specify"
-                  className={`w-full px-3 py-2 border rounded-md ${errors.educational_attainment_other ? 'border-red-500' : 'border-gray-300'}`}
+                  className={inputClass('educational_attainment_other')}
                 />
-                {errors.educational_attainment_other && <p className="text-red-500 text-xs mt-1">{errors.educational_attainment_other}</p>}
+                {errors.educational_attainment_other && <p className="form-error">{errors.educational_attainment_other}</p>}
               </div>
             )}
           </div>
 
-          {/* Buttons */}
+          {/* Submit Button */}
           <div className="flex gap-2">
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
               {isLoading ? 'Saving...' : resident ? 'Update Resident' : 'Add Resident'}
             </Button>
+            {resident && onAddNew && (
+              <Button type="button" onClick={() => setShowAddNewConfirm(true)} className="bg-green-600 hover:bg-green-700">
+                + Add New Resident
+              </Button>
+            )}
           </div>
         </form>
+
+        {/* Add New Confirmation Modal */}
+        {showAddNewConfirm && (
+          <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 flex flex-col gap-4 shadow-2xl border border-gray-200 max-w-md">
+              <h3 className="text-lg font-semibold text-gray-800">Add New Resident?</h3>
+              <p className="text-gray-600">This will clear the current form and start a new entry. Are you sure?</p>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => setShowAddNewConfirm(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="button" 
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    setShowAddNewConfirm(false);
+                    onAddNew();
+                  }}
+                >
+                  Yes, Add New
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -67,7 +67,7 @@ export const getAllResidents = async (req, res) => {
     const total = countResult.count;
 
     // Get paginated results
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    query += ' ORDER BY last_name ASC LIMIT ? OFFSET ?';
     const residents = await dbAll(query, [...params, limit, offset]);
 
     res.status(200).json({
@@ -155,19 +155,6 @@ export const createResident = async (req, res) => {
       });
     }
 
-    // Check if household_number already exists
-    const existingHousehold = await dbGet(
-      'SELECT id FROM residents WHERE household_number = ?',
-      [household_number]
-    );
-
-    if (existingHousehold) {
-      return res.status(400).json({
-        success: false,
-        error: 'Household number already exists',
-      });
-    }
-
     // Auto-generate resident_id: get the max ID and increment
     const maxIdResult = await dbGet(
       'SELECT MAX(CAST(SUBSTR(resident_id, 5) AS INTEGER)) as max_id FROM residents WHERE resident_id LIKE "RES-%"'
@@ -245,17 +232,19 @@ export const updateResident = async (req, res) => {
       });
     }
 
-    // Check if household_number or resident_id already exists (for other residents)
-    if (household_number || resident_id) {
-      const duplicate = await dbGet(
-        'SELECT id FROM residents WHERE (household_number = ? OR resident_id = ?) AND id != ?',
-        [household_number, resident_id, id]
+    // Check if resident_id already exists (for other residents)
+    // Note: household_number is NOT unique - multiple residents can share the same household
+    if (resident_id) {
+      console.log('[UPDATE] Checking duplicate resident_id:', resident_id, 'for id:', id);
+      const duplicateResidentId = await dbGet(
+        'SELECT id FROM residents WHERE resident_id = ? AND id != ?',
+        [resident_id, id]
       );
-
-      if (duplicate) {
+      console.log('[UPDATE] Duplicate resident_id check result:', duplicateResidentId);
+      if (duplicateResidentId) {
         return res.status(400).json({
           success: false,
-          error: 'Household number or Resident ID already exists',
+          error: 'Resident ID already exists',
         });
       }
     }
@@ -361,7 +350,7 @@ export const searchResidents = async (req, res) => {
          resident_id LIKE ? OR 
          contact_number LIKE ?
        )
-       ORDER BY created_at DESC 
+       ORDER BY last_name ASC 
        LIMIT ? OFFSET ?`,
       [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, limit, offset]
     );

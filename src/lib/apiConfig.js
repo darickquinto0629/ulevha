@@ -7,38 +7,20 @@
  * - Electron: Uses localhost with port detection
  */
 
-let API_URL = null;
-
+// ALWAYS use absolute URL for Electron - no caching, no detection games
 export const getApiUrl = () => {
-  if (API_URL) {
-    return API_URL;
+  // If file:// protocol, we're DEFINITELY in Electron
+  if (window.location.protocol === 'file:') {
+    return 'http://127.0.0.1:3000/api';
   }
-
-  // Check if we're in Electron
-  const isElectron = !!(window && window.process && window.process.type === 'renderer');
   
-  // Check if we're in development
-  const isDevelopment = import.meta.env.DEV;
-
-  if (isDevelopment) {
-    // Development: Use relative URL which will be proxied by Vite
-    // Vite proxy in vite.config.js routes /api/* to http://127.0.0.1:3000
-    API_URL = '/api';
-  } else if (isElectron) {
-    // Electron: Use localhost (runs both frontend and backend locally)
-    API_URL = 'http://localhost:3000/api';
-  } else {
-    // Production web: Use the same origin as the frontend
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    const port = window.location.port ? `:${window.location.port}` : '';
-    API_URL = `${protocol}//${hostname}${port}/api`;
+  // Development with Vite proxy
+  if (import.meta.env.DEV) {
+    return '/api';
   }
-
-  console.log('[API Config] Environment:', isDevelopment ? 'development' : isElectron ? 'electron' : 'production');
-  console.log('[API Config] API URL:', API_URL);
-
-  return API_URL;
+  
+  // Production web
+  return `${window.location.origin}/api`;
 };
 
 /**

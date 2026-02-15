@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,20 @@ export default function ResidentManagement() {
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [listRefreshKey, setListRefreshKey] = useState(0);
+  const [formResetKey, setFormResetKey] = useState(0);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Auto-close success popup after 3 seconds
+  useEffect(() => {
+    if (showSuccessPopup) {
+      const timer = setTimeout(() => {
+        setShowSuccessPopup(false);
+        setSuccessMessage('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessPopup]);
 
   // Determine dashboard path based on current URL
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -59,17 +73,27 @@ export default function ResidentManagement() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save resident');
+        throw new Error(errorData.error || errorData.message || 'Failed to save resident');
       }
 
-      setMessage(`Resident ${isEditing ? 'updated' : 'added'} successfully!`);
-      setActiveTab('list');
-      setSelectedResident(null);
-      
-      // Trigger refresh
-      triggerListRefresh();
+      const responseData = await response.json();
 
-      // Clear message after 3 seconds
+      setMessage(`Resident ${isEditing ? 'updated' : 'added'} successfully!`);
+      setSuccessMessage(`Resident ${isEditing ? 'updated' : 'added'} successfully!`);
+      setShowSuccessPopup(true);
+      
+      if (isEditing) {
+        // Stay on edit form when updating
+        triggerListRefresh();
+      } else {
+        // Switch to edit mode with the newly created resident
+        const newResident = responseData.data || responseData;
+        setSelectedResident({ ...formData, id: newResident.id });
+        setActiveTab('edit');
+        triggerListRefresh();
+      }
+
+      // Clear inline message after 3 seconds
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       setMessage(`Error: ${err.message}`);
@@ -83,35 +107,50 @@ export default function ResidentManagement() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="page-section">
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 flex flex-col items-center gap-4 shadow-2xl border border-gray-200">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+            <p className="text-lg font-medium text-gray-700">Saving...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div 
+          className="fixed inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-50 cursor-pointer"
+          onClick={() => { setShowSuccessPopup(false); setSuccessMessage(''); }}
+        >
+          <div className="bg-white rounded-xl p-8 flex flex-col items-center gap-4 shadow-2xl border border-gray-200 animate-in fade-in zoom-in duration-200">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-xl font-semibold text-gray-800">{successMessage}</p>
+          </div>
+        </div>
+      )}
+
       {/* Page Title with Back Button */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-header">
         <div>
-          <Link
-            to={dashboardPath}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-2 inline-block"
-          >
-            ← Back to Dashboard
-          </Link>
-          <h2 className="text-2xl font-bold text-gray-900">Resident Management</h2>
+          <Link to={dashboardPath} className="back-link">← Back to Dashboard</Link>
+          <h2 className="page-title">Resident Management</h2>
         </div>
         {activeTab === 'list' && (
-          <Button
-            onClick={handleAddClick}
-            className="bg-green-600 hover:bg-green-700"
-          >
+          <Button onClick={handleAddClick} className="bg-green-600 hover:bg-green-700">
             + Add New Resident
           </Button>
         )}
       </div>
 
-      {/* Message */}
-      {message && (
-        <div className={`px-4 py-3 rounded-md border ${
-          message.startsWith('Error')
-            ? 'bg-red-50 border-red-200 text-red-800'
-            : 'bg-green-50 border-green-200 text-green-800'
-        }`}>
+      {/* Error Message */}
+      {message && message.startsWith('Error') && (
+        <div className="message-error">
           {message}
         </div>
       )}
@@ -124,7 +163,7 @@ export default function ResidentManagement() {
             placeholder="Search by name, household #, resident ID, or contact..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="form-input"
           />
         </div>
       )}
@@ -135,6 +174,7 @@ export default function ResidentManagement() {
           key={listRefreshKey}
           onEdit={handleEditClick}
           searchQuery={searchQuery}
+          isAdmin={user?.role === 'admin'}
         />
       )}
 
@@ -152,9 +192,15 @@ export default function ResidentManagement() {
             </Button>
           </div>
           <ResidentForm
+            key={formResetKey}
             resident={selectedResident}
             onSubmit={handleFormSubmit}
             isLoading={isSubmitting}
+            onAddNew={() => {
+              setSelectedResident(null);
+              setActiveTab('add');
+              setFormResetKey(prev => prev + 1);
+            }}
           />
         </>
       )}

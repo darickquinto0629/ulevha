@@ -17,7 +17,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests from:
     // 1. Development: localhost and 127.0.0.1 on any port
-    // 2. Electron: localhost and 127.0.0.1
+    // 2. Electron file:// protocol (origin is 'null' string or undefined)
     // 3. No origin (mobile, Electron, curl requests): allow
     const allowedOrigins = [
       'http://localhost:5173', // Vite dev server
@@ -34,7 +34,9 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    if (!origin || allowedOrigins.some(allowed => {
+    // Allow null origin (file:// protocol in Electron sends 'null' string)
+    // Also allow undefined/empty origin (curl, mobile apps, etc)
+    if (!origin || origin === 'null' || allowedOrigins.some(allowed => {
       if (allowed instanceof RegExp) {
         return allowed.test(origin);
       }

@@ -5,6 +5,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './', // Needed for Electron to load assets correctly
   plugins: [
     tailwindcss(),
     react({

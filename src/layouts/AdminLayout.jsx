@@ -1,13 +1,25 @@
 import React from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AdminDashboard from '@/pages/AdminDashboard';
 import ResidentManagement from '@/pages/ResidentManagement';
+import UserManagement from '@/pages/UserManagement';
+
+const navItems = [
+  { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
+  { path: '/admin/residents', icon: '👨‍👩‍👧‍👦', label: 'Residents' },
+  { path: '/admin/users', icon: '👥', label: 'User Management' },
+  { path: '/admin/logs', icon: '📋', label: 'Audit Logs', disabled: true },
+  { path: '/admin/backup', icon: '💾', label: 'Backup', disabled: true },
+  { path: '/admin/staff', icon: '🔐', label: 'Staff Management', disabled: true },
+];
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -15,31 +27,75 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div className="dashboard-layout">
+      {/* Sidebar */}
+      <aside className="dashboard-sidebar">
+        <div className="dashboard-sidebar-header">
+          <h1 className="dashboard-sidebar-title">ULEVHA</h1>
+          <p className="dashboard-sidebar-subtitle">Admin Portal</p>
+        </div>
+        <nav className="dashboard-sidebar-nav">
+          <p className="dashboard-sidebar-section">Main Menu</p>
+          {navItems.slice(0, 2).map((item) => (
+            <div
+              key={item.path}
+              className={location.pathname === item.path ? 'sidebar-nav-item-active' : 'sidebar-nav-item'}
+              onClick={() => !item.disabled && navigate(item.path)}
+            >
+              <span className="sidebar-nav-icon">{item.icon}</span>
+              <span className="sidebar-nav-text">{item.label}</span>
+            </div>
+          ))}
+          
+          <p className="dashboard-sidebar-section">Administration</p>
+          {navItems.slice(2, 3).map((item) => (
+            <div
+              key={item.path}
+              className={`${location.pathname === item.path ? 'sidebar-nav-item-active' : 'sidebar-nav-item'} ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => !item.disabled && navigate(item.path)}
+            >
+              <span className="sidebar-nav-icon">{item.icon}</span>
+              <span className="sidebar-nav-text">{item.label}</span>
+            </div>
+          ))}
+          
+          <p className="dashboard-sidebar-section">System</p>
+          {navItems.slice(3).map((item) => (
+            <div
+              key={item.path}
+              className={`${location.pathname === item.path ? 'sidebar-nav-item-active' : 'sidebar-nav-item'} ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => !item.disabled && navigate(item.path)}
+            >
+              <span className="sidebar-nav-icon">{item.icon}</span>
+              <span className="sidebar-nav-text">{item.label}</span>
+            </div>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <div className="dashboard-main">
+        <header className="dashboard-header">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">ULEVHA Admin Dashboard</h1>
-            <p className="text-gray-600 text-sm mt-1">Welcome back, {user?.name}</p>
+            <p className="text-sm text-gray-600">Welcome back, <span className="font-medium">{user?.name}</span></p>
           </div>
           <div className="flex items-center gap-4">
             <Badge className="bg-red-100 text-red-800">Admin</Badge>
-            <Button onClick={handleLogout} variant="outline">
+            <Button onClick={handleLogout} variant="outline" size="sm">
               Logout
             </Button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <Routes>
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="residents" element={<ResidentManagement />} />
-          <Route path="*" element={<Navigate to="dashboard" replace />} />
-        </Routes>
-      </main>
+        <main className="dashboard-content">
+          <Routes>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="residents" element={<ResidentManagement />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="*" element={<Navigate to="dashboard" replace />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 }
