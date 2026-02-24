@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiCall } from '@/lib/apiConfig';
@@ -19,6 +20,7 @@ import {
 const GENDER_COLORS = ['#3b82f6', '#ec4899', '#8b5cf6'];
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const { token } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +74,22 @@ export default function AdminDashboard() {
     return stats.byAge;
   };
 
+  const getStreetChartData = () => {
+    if (!stats?.byStreet) return [];
+    return stats.byStreet;
+  };
+
+  const handleStreetClick = (data) => {
+    if (data?.street) {
+      // Save street filter to localStorage so it persists
+      localStorage.setItem('residentStreetFilter', data.street);
+      localStorage.setItem('residentSearchQuery', '');
+      localStorage.setItem('residentAgeFilter', '');
+      localStorage.setItem('residentGenderFilter', '');
+      navigate('/admin/residents');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900">Overview</h2>
@@ -89,10 +107,6 @@ export default function AdminDashboard() {
         <div className="stat-card-compact">
           <p className="stat-title">Female</p>
           <p className="stat-value-pink">{loading ? '...' : getFemaleCount()}</p>
-        </div>
-        <div className="stat-card-compact">
-          <p className="stat-title">System</p>
-          <p className="stat-value-green text-lg">Online</p>
         </div>
       </div>
 
@@ -161,6 +175,38 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Street Distribution Chart */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Residents by Street</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            {loading ? (
+              <div className="chart-placeholder">Loading...</div>
+            ) : getStreetChartData().length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getStreetChartData()} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="street" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" height={80} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar 
+                    dataKey="count" 
+                    fill="#10b981" 
+                    radius={[4, 4, 0, 0]} 
+                    onClick={handleStreetClick}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="chart-placeholder">No data available</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

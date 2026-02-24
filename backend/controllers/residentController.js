@@ -42,12 +42,27 @@ const calculateAge = (dateOfBirth) => {
   return age;
 };
 
+// Helper function to get age range condition for SQL
+const getAgeRangeCondition = (ageGroup) => {
+  const ageRanges = {
+    '0-17': { min: 0, max: 17 },
+    '18-30': { min: 18, max: 30 },
+    '31-45': { min: 31, max: 45 },
+    '46-59': { min: 46, max: 59 },
+    '60+': { min: 60, max: 200 },
+  };
+  return ageRanges[ageGroup] || null;
+};
+
 // Get all residents with pagination
 export const getAllResidents = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
+    const ageGroup = req.query.ageGroup || '';
+    const gender = req.query.gender || '';
+    const street = req.query.street || '';
     const offset = (page - 1) * limit;
 
     let query = 'SELECT * FROM residents WHERE is_active = 1';
@@ -60,6 +75,30 @@ export const getAllResidents = async (req, res) => {
       query += ` AND (first_name LIKE ? OR last_name LIKE ? OR household_number LIKE ? OR resident_id LIKE ? OR contact_number LIKE ?)`;
       countQuery += ` AND (first_name LIKE ? OR last_name LIKE ? OR household_number LIKE ? OR resident_id LIKE ? OR contact_number LIKE ?)`;
       params = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
+    }
+
+    // Add age group filter
+    if (ageGroup) {
+      const ageRange = getAgeRangeCondition(ageGroup);
+      if (ageRange) {
+        query += ` AND age >= ? AND age <= ?`;
+        countQuery += ` AND age >= ? AND age <= ?`;
+        params = [...params, ageRange.min, ageRange.max];
+      }
+    }
+
+    // Add gender filter
+    if (gender) {
+      query += ` AND gender = ?`;
+      countQuery += ` AND gender = ?`;
+      params = [...params, gender];
+    }
+
+    // Add street filter
+    if (street) {
+      query += ` AND address = ?`;
+      countQuery += ` AND address = ?`;
+      params = [...params, street];
     }
 
     // Get total count
@@ -329,42 +368,67 @@ export const deleteResident = async (req, res) => {
 // Search residents
 export const searchResidents = async (req, res) => {
   try {
-    const { query, page = 1, limit = 10 } = req.query;
+    const { query, page = 1, limit = 10, ageGroup = '', gender = '', street = '' } = req.query;
 
-    if (!query) {
+    if (!query && !ageGroup && !gender && !street) {
       return res.status(400).json({
         success: false,
-        error: 'Search query is required',
+        error: 'Search query or filter is required',
       });
     }
 
-    const searchTerm = `%${query}%`;
+    const searchTerm = query ? `%${query}%` : '';
     const offset = (page - 1) * limit;
+    let params = [];
+    let whereConditions = ['is_active = 1'];
 
-    const residents = await dbAll(
-      `SELECT * FROM residents 
-       WHERE is_active = 1 AND (
+    // Add search filter
+    if (query) {
+      whereConditions.push(`(
          first_name LIKE ? OR 
          last_name LIKE ? OR 
          household_number LIKE ? OR 
          resident_id LIKE ? OR 
          contact_number LIKE ?
-       )
+       )`);
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    // Add age group filter
+    if (ageGroup) {
+      const ageRange = getAgeRangeCondition(ageGroup);
+      if (ageRange) {
+        whereConditions.push(`age >= ? AND age <= ?`);
+        params.push(ageRange.min, ageRange.max);
+      }
+    }
+
+    // Add gender filter
+    if (gender) {
+      whereConditions.push(`gender = ?`);
+      params.push(gender);
+    }
+
+    // Add street filter
+    if (street) {
+      whereConditions.push(`address = ?`);
+      params.push(street);
+    }
+
+    const whereClause = whereConditions.join(' AND ');
+
+    const residents = await dbAll(
+      `SELECT * FROM residents 
+       WHERE ${whereClause}
        ORDER BY last_name ASC 
        LIMIT ? OFFSET ?`,
-      [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, limit, offset]
+      [...params, limit, offset]
     );
 
     const countResult = await dbGet(
       `SELECT COUNT(*) as count FROM residents 
-       WHERE is_active = 1 AND (
-         first_name LIKE ? OR 
-         last_name LIKE ? OR 
-         household_number LIKE ? OR 
-         resident_id LIKE ? OR 
-         contact_number LIKE ?
-       )`,
-      [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]
+       WHERE ${whereClause}`,
+      params
     );
 
     res.status(200).json({
@@ -401,6 +465,10 @@ export const getResidentStats = async (req, res) => {
       'SELECT educational_attainment, COUNT(*) as count FROM residents WHERE is_active = 1 GROUP BY educational_attainment'
     );
 
+    const byStreet = await dbAll(
+      'SELECT address as street, COUNT(*) as count FROM residents WHERE is_active = 1 AND address IS NOT NULL AND address != "" GROUP BY address ORDER BY count DESC'
+    );
+
     // Get all residents with date_of_birth to calculate age distribution
     const residents = await dbAll(
       'SELECT date_of_birth FROM residents WHERE is_active = 1 AND date_of_birth IS NOT NULL'
@@ -411,8 +479,8 @@ export const getResidentStats = async (req, res) => {
       '0-17': 0,
       '18-30': 0,
       '31-45': 0,
-      '46-60': 0,
-      '61+': 0,
+      '46-59': 0,
+      '60+': 0,
     };
 
     residents.forEach((resident) => {
@@ -420,8 +488,8 @@ export const getResidentStats = async (req, res) => {
       if (age <= 17) ageGroups['0-17']++;
       else if (age <= 30) ageGroups['18-30']++;
       else if (age <= 45) ageGroups['31-45']++;
-      else if (age <= 60) ageGroups['46-60']++;
-      else ageGroups['61+']++;
+      else if (age <= 59) ageGroups['46-59']++;
+      else ageGroups['60+']++;
     });
 
     const byAge = Object.entries(ageGroups).map(([ageGroup, count]) => ({
@@ -435,6 +503,7 @@ export const getResidentStats = async (req, res) => {
         total: totalResidents.count,
         byGender,
         byAge,
+        byStreet,
         byEducationalAttainment: byEdAttainment,
       },
     });

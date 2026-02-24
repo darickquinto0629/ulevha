@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Dashboard Analytics
 - **Resident Statistics Cards**: Display total residents, male population count, and female population count in real-time
-- **Age Distribution Chart**: Interactive bar chart showing residents grouped by age ranges (0-17, 18-30, 31-45, 46-60, 61+)
+- **Age Distribution Chart**: Interactive bar chart showing residents grouped by age ranges (0-17, 18-30, 31-45, 46-59, 60+)
 - **Gender Distribution Chart**: Pie chart with percentage labels showing male/female distribution
 - Charts implemented using **Recharts** library with responsive design
 

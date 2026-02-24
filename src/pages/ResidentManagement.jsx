@@ -13,7 +13,10 @@ export default function ResidentManagement() {
   const [selectedResident, setSelectedResident] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('residentSearchQuery') || '');
+  const [ageFilter, setAgeFilter] = useState(() => localStorage.getItem('residentAgeFilter') || '');
+  const [genderFilter, setGenderFilter] = useState(() => localStorage.getItem('residentGenderFilter') || '');
+  const [streetFilter, setStreetFilter] = useState(() => localStorage.getItem('residentStreetFilter') || '');
   const [listRefreshKey, setListRefreshKey] = useState(0);
   const [formResetKey, setFormResetKey] = useState(0);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
@@ -29,6 +32,23 @@ export default function ResidentManagement() {
       return () => clearTimeout(timer);
     }
   }, [showSuccessPopup]);
+
+  // Persist filters to localStorage
+  useEffect(() => {
+    localStorage.setItem('residentSearchQuery', searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    localStorage.setItem('residentAgeFilter', ageFilter);
+  }, [ageFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('residentGenderFilter', genderFilter);
+  }, [genderFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('residentStreetFilter', streetFilter);
+  }, [streetFilter]);
 
   // Determine dashboard path based on current URL
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -155,16 +175,86 @@ export default function ResidentManagement() {
         </div>
       )}
 
-      {/* Search Bar (only on list tab) */}
+      {/* Search Bar and Filters (only on list tab) */}
       {activeTab === 'list' && (
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <input
-            type="text"
-            placeholder="Search by name, household #, resident ID, or contact..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="form-input"
-          />
+          <div className="flex gap-4 items-center flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <input
+                type="text"
+                placeholder="Search by name, household #, resident ID, or contact..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="form-input w-full"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 whitespace-nowrap">Age Group:</label>
+              <select
+                value={ageFilter}
+                onChange={(e) => setAgeFilter(e.target.value)}
+                className="form-select w-auto min-w-[120px]"
+              >
+                <option value="">All Ages</option>
+                <option value="0-17">0-17</option>
+                <option value="18-30">18-30</option>
+                <option value="31-45">31-45</option>
+                <option value="46-59">46-59</option>
+                <option value="60+">60+</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 whitespace-nowrap">Gender:</label>
+              <select
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className="form-select w-auto min-w-[100px]"
+              >
+                <option value="">All</option>
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 whitespace-nowrap">Street:</label>
+              <select
+                value={streetFilter}
+                onChange={(e) => setStreetFilter(e.target.value)}
+                className="form-select w-auto min-w-[120px]"
+              >
+                <option value="">All Streets</option>
+                <option value="Diamond">Diamond</option>
+                <option value="Ruby">Ruby</option>
+                <option value="Pearl">Pearl</option>
+                <option value="Topaz">Topaz</option>
+                <option value="Turmaline">Turmaline</option>
+                <option value="Sapphire">Sapphire</option>
+                <option value="Emerald">Emerald</option>
+                <option value="Amethyst">Amethyst</option>
+                <option value="Jade">Jade</option>
+                <option value="Opal">Opal</option>
+                <option value="Quartz">Quartz</option>
+              </select>
+            </div>
+            {(searchQuery || ageFilter || genderFilter || streetFilter) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setAgeFilter('');
+                  setGenderFilter('');
+                  setStreetFilter('');
+                  localStorage.removeItem('residentSearchQuery');
+                  localStorage.removeItem('residentAgeFilter');
+                  localStorage.removeItem('residentGenderFilter');
+                  localStorage.removeItem('residentStreetFilter');
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
@@ -174,6 +264,9 @@ export default function ResidentManagement() {
           key={listRefreshKey}
           onEdit={handleEditClick}
           searchQuery={searchQuery}
+          ageFilter={ageFilter}
+          genderFilter={genderFilter}
+          streetFilter={streetFilter}
           isAdmin={user?.role === 'admin'}
         />
       )}

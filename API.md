@@ -268,27 +268,27 @@ Get age and gender distribution data.
   "data": {
     "ageDistribution": [
       {
-        "ageGroup": "18-25",
+        "ageGroup": "0-17",
         "count": 15,
         "percentage": 10.5
       },
       {
-        "ageGroup": "26-35",
+        "ageGroup": "18-30",
         "count": 35,
         "percentage": 24.5
       },
       {
-        "ageGroup": "36-45",
+        "ageGroup": "31-45",
         "count": 45,
         "percentage": 31.5
       },
       {
-        "ageGroup": "46-55",
+        "ageGroup": "46-59",
         "count": 32,
         "percentage": 22.4
       },
       {
-        "ageGroup": "56+",
+        "ageGroup": "60+",
         "count": 16,
         "percentage": 11.2
       }

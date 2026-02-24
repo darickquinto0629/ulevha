@@ -40,7 +40,7 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
     if (!formData.last_name) newErrors.last_name = 'Last Name is required';
     if (!formData.gender) newErrors.gender = 'Gender is required';
     if (!formData.date_of_birth) newErrors.date_of_birth = 'Date of Birth is required';
-    if (!formData.address) newErrors.address = 'Address is required';
+    if (!formData.address) newErrors.address = 'Street is required';
 
     if (formData.educational_attainment === 'Others please specify' && !formData.educational_attainment_other) {
       newErrors.educational_attainment_other = 'Please specify educational attainment';
@@ -94,7 +94,7 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
                 value={formData.household_number}
                 onChange={handleInputChange}
                 className={inputClass('household_number')}
-                placeholder="e.g., HH-001"
+                placeholder="e.g., 001"
               />
               {errors.household_number && <p className="form-error">{errors.household_number}</p>}
             </div>
@@ -110,6 +110,31 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
                 placeholder="Optional"
               />
             </div>
+          </div>
+
+          {/* Street */}
+          <div className="form-group">
+            <label className="form-label">Street *</label>
+            <select
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              className={selectClass('address')}
+            >
+              <option value="">Select Street</option>
+              <option value="Diamond">Diamond</option>
+              <option value="Ruby">Ruby</option>
+              <option value="Pearl">Pearl</option>
+              <option value="Topaz">Topaz</option>
+              <option value="Turmaline">Turmaline</option>
+              <option value="Sapphire">Sapphire</option>
+              <option value="Emerald">Emerald</option>
+              <option value="Amethyst">Amethyst</option>
+              <option value="Jade">Jade</option>
+              <option value="Opal">Opal</option>
+              <option value="Quartz">Quartz</option>
+            </select>
+            {errors.address && <p className="form-error">{errors.address}</p>}
           </div>
 
           {/* Name Fields */}
@@ -208,19 +233,6 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
                 <option value="Widowed">Widowed</option>
               </select>
             </div>
-          </div>
-
-          {/* Address */}
-          <div className="form-group">
-            <label className="form-label">Address *</label>
-            <textarea
-              name="address"
-              value={formData.address}
-              onChange={handleInputChange}
-              className={inputClass('address')}
-              rows="3"
-            />
-            {errors.address && <p className="form-error">{errors.address}</p>}
           </div>
 
           {/* Contact and Religion */}

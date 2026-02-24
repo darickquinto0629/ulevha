@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiUrl } from '@/lib/apiConfig';
 
-export default function ResidentList({ onEdit, searchQuery = '', isAdmin = false }) {
+export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '', genderFilter = '', streetFilter = '', isAdmin = false }) {
   const { token } = useAuth();
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,9 +17,14 @@ export default function ResidentList({ onEdit, searchQuery = '', isAdmin = false
   });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+  }, [searchQuery, ageFilter, genderFilter, streetFilter]);
+
   useEffect(() => {
     fetchResidents();
-  }, [pagination.currentPage, pagination.pageSize, searchQuery]);
+  }, [pagination.currentPage, pagination.pageSize, searchQuery, ageFilter, genderFilter, streetFilter]);
 
   const fetchResidents = async () => {
     setLoading(true);
@@ -30,6 +35,21 @@ export default function ResidentList({ onEdit, searchQuery = '', isAdmin = false
         page: pagination.currentPage,
         limit: pagination.pageSize,
       });
+
+      // Add age filter if present
+      if (ageFilter) {
+        params.append('ageGroup', ageFilter);
+      }
+
+      // Add gender filter if present
+      if (genderFilter) {
+        params.append('gender', genderFilter);
+      }
+
+      // Add street filter if present
+      if (streetFilter) {
+        params.append('street', streetFilter);
+      }
 
       const endpoint = searchQuery
         ? `${apiUrl}/residents/search?${params}&query=${encodeURIComponent(searchQuery)}`
@@ -119,9 +139,9 @@ export default function ResidentList({ onEdit, searchQuery = '', isAdmin = false
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold">Name</th>
                     <th className="px-4 py-2 text-left font-semibold">Household #</th>
+                    <th className="px-4 py-2 text-left font-semibold">Street</th>
                     <th className="px-4 py-2 text-left font-semibold">Age</th>
                     <th className="px-4 py-2 text-left font-semibold">Contact</th>
-                    <th className="px-4 py-2 text-left font-semibold">Civil Status</th>
                     <th className="px-4 py-2 text-left font-semibold">Actions</th>
                   </tr>
                 </thead>
@@ -132,9 +152,9 @@ export default function ResidentList({ onEdit, searchQuery = '', isAdmin = false
                         {resident.last_name}, {resident.first_name}{resident.middle_name ? `, ${resident.middle_name}` : ''}
                       </td>
                       <td className="px-4 py-2">{resident.household_number}</td>
+                      <td className="px-4 py-2">{resident.address || '-'}</td>
                       <td className="px-4 py-2">{resident.age}</td>
                       <td className="px-4 py-2">{resident.contact_number || '-'}</td>
-                      <td className="px-4 py-2">{resident.civil_status || '-'}</td>
                       <td className="px-4 py-2 space-x-2">
                         <button onClick={() => onEdit(resident)} className="text-blue-600 hover:text-blue-800 text-sm">
                           Edit
