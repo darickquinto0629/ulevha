@@ -90,21 +90,73 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAgeClick = (data) => {
+    if (data?.ageGroup) {
+      // Save age filter to localStorage so it persists
+      localStorage.setItem('residentAgeFilter', data.ageGroup);
+      localStorage.setItem('residentSearchQuery', '');
+      localStorage.setItem('residentGenderFilter', '');
+      localStorage.setItem('residentStreetFilter', '');
+      navigate('/admin/residents');
+    }
+  };
+
+  const handleGenderClick = (data) => {
+    if (data?.name) {
+      // Map display name back to gender code
+      const genderCode = data.name === 'Male' ? 'M' : data.name === 'Female' ? 'F' : '';
+      if (genderCode) {
+        localStorage.setItem('residentGenderFilter', genderCode);
+        localStorage.setItem('residentSearchQuery', '');
+        localStorage.setItem('residentAgeFilter', '');
+        localStorage.setItem('residentStreetFilter', '');
+        navigate('/admin/residents');
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900">Overview</h2>
       
       {/* Statistics Cards - Compact Row */}
       <div className="stats-row">
-        <div className="stat-card-compact">
+        <div 
+          className="stat-card-compact cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            localStorage.removeItem('residentSearchQuery');
+            localStorage.removeItem('residentAgeFilter');
+            localStorage.removeItem('residentGenderFilter');
+            localStorage.removeItem('residentStreetFilter');
+            navigate('/admin/residents');
+          }}
+        >
           <p className="stat-title">Total Residents</p>
           <p className="stat-value">{loading ? '...' : stats?.total || 0}</p>
         </div>
-        <div className="stat-card-compact">
+        <div 
+          className="stat-card-compact cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            localStorage.setItem('residentGenderFilter', 'M');
+            localStorage.removeItem('residentSearchQuery');
+            localStorage.removeItem('residentAgeFilter');
+            localStorage.removeItem('residentStreetFilter');
+            navigate('/admin/residents');
+          }}
+        >
           <p className="stat-title">Male</p>
           <p className="stat-value-blue">{loading ? '...' : getMaleCount()}</p>
         </div>
-        <div className="stat-card-compact">
+        <div 
+          className="stat-card-compact cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            localStorage.setItem('residentGenderFilter', 'F');
+            localStorage.removeItem('residentSearchQuery');
+            localStorage.removeItem('residentAgeFilter');
+            localStorage.removeItem('residentStreetFilter');
+            navigate('/admin/residents');
+          }}
+        >
           <p className="stat-title">Female</p>
           <p className="stat-value-pink">{loading ? '...' : getFemaleCount()}</p>
         </div>
@@ -128,7 +180,13 @@ export default function AdminDashboard() {
                     <XAxis dataKey="ageGroup" tick={{ fontSize: 12 }} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar 
+                      dataKey="count" 
+                      fill="#3b82f6" 
+                      radius={[4, 4, 0, 0]} 
+                      onClick={handleAgeClick}
+                      style={{ cursor: 'pointer' }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -159,6 +217,8 @@ export default function AdminDashboard() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
+                      onClick={handleGenderClick}
+                      style={{ cursor: 'pointer' }}
                     >
                       {getGenderChartData().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
