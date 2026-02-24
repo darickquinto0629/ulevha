@@ -5,12 +5,31 @@ A comprehensive CRUD application designed for managing resident information at E
 ## 📋 Features
 
 ### Core Functionality
-- **User Management** - Complete CRUD operations for resident records
-- **Admin Dashboard** - Advanced settings and system configuration
+- **Resident Management** - Complete CRUD operations for resident records
+- **Admin Dashboard** - Advanced settings, system configuration, and interactive analytics
 - **Staff Interface** - Streamlined interface for standard user operations
-- **Analytics** - Visual charts displaying resident demographics:
-  - Age distribution analysis
-  - Gender distribution visualization
+- **Interactive Analytics** - Clickable charts that navigate to filtered resident lists:
+  - Age distribution analysis (click to filter by age group)
+  - Gender distribution visualization (click to filter by gender)
+  - Street-based resident distribution (click to filter by street)
+- **Smart Filtering** - Persistent filters that remember your selections across page reloads
+
+### Resident Data Fields
+- Household Number
+- PhilSys Card Number
+- Street (dropdown: Diamond, Ruby, Pearl, Topaz, Turmaline, Sapphire, Emerald, Amethyst, Jade, Opal, Quartz)
+- First Name, Middle Name, Last Name
+- Gender, Date of Birth, Birth Place
+- Contact Number, Religion
+- Civil Status
+- Educational Attainment
+
+### Search & Filtering
+- Text search by name, household number, resident ID, or contact
+- Filter by Age Group (0-17, 18-30, 31-45, 46-59, 60+)
+- Filter by Gender (Male, Female)
+- Filter by Street
+- Filters persist in localStorage until cleared
 
 ### User Roles
 - **Admin** - Full system access including advanced settings and user management
@@ -37,12 +56,31 @@ A comprehensive CRUD application designed for managing resident information at E
 ulevha/
 ├── src/
 │   ├── components/        # React components
+│   │   ├── ResidentForm.jsx    # Resident add/edit form
+│   │   ├── ResidentList.jsx    # Residents table with pagination
+│   │   ├── ProtectedRoute.jsx  # Auth route protection
+│   │   └── ui/                 # Reusable UI components
 │   ├── pages/             # Page components
+│   │   ├── AdminDashboard.jsx      # Admin analytics dashboard
+│   │   ├── StaffDashboard.jsx      # Staff dashboard
+│   │   ├── ResidentManagement.jsx  # Resident CRUD interface
+│   │   ├── UserManagement.jsx      # User management (admin)
+│   │   └── LoginPage.jsx           # Authentication page
+│   ├── contexts/          # React contexts (Auth)
+│   ├── hooks/             # Custom React hooks
+│   ├── layouts/           # Layout components
+│   ├── lib/               # Utility functions and API config
 │   ├── assets/            # Images, icons, etc.
 │   ├── App.jsx            # Main App component
 │   ├── main.jsx           # Application entry point
 │   ├── index.css          # Global styles
 │   └── App.css            # App-level styles
+├── backend/
+│   ├── controllers/       # API controllers
+│   ├── database/          # SQLite database
+│   ├── middleware/        # Auth middleware
+│   └── routes/            # API routes
+├── electron/              # Electron main/preload scripts
 ├── public/                # Static assets
 ├── vite.config.js         # Vite configuration
 ├── eslint.config.js       # ESLint configuration
@@ -102,9 +140,20 @@ ulevha/
 
 ## 📊 Analytics Dashboard
 
-The system includes visual representations of resident data:
-- **Age Demographics** - Distribution chart showing age groups
-- **Gender Distribution** - Comparative analysis of gender breakdown
+The system includes interactive visual representations of resident data:
+
+### Summary Cards (Clickable)
+- **Total Residents** - Click to view all residents
+- **Male Count** - Click to filter residents by male gender
+- **Female Count** - Click to filter residents by female gender
+
+### Charts (Clickable)
+- **Age Demographics** - Bar chart showing age group distribution (0-17, 18-30, 31-45, 46-59, 60+)
+  - Click any bar to filter residents by that age group
+- **Gender Distribution** - Pie chart showing gender breakdown
+  - Click any slice to filter residents by that gender
+- **Residents by Street** - Bar chart showing resident count per street
+  - Click any bar to filter residents by that street
 
 ## 💻 Development
 
