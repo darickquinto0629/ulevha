@@ -22,8 +22,8 @@ router.get('/:id', getUserById);
 // Create user (Admin only)
 router.post('/', authorizeRole('admin'), createUser);
 
-// Update user (own profile or admin)
-router.put('/:id', updateUser);
+// Update user (admin only - use /profile for self-update)
+router.put('/:id', authorizeRole('admin'), updateUser);
 
 // Delete user (Admin only)
 router.delete('/:id', authorizeRole('admin'), deleteUser);

@@ -86,6 +86,7 @@ export default function AdminDashboard() {
       localStorage.setItem('residentSearchQuery', '');
       localStorage.setItem('residentAgeFilter', '');
       localStorage.setItem('residentGenderFilter', '');
+      localStorage.setItem('residentCardTypeFilter', '');
       navigate('/admin/residents');
     }
   };
@@ -97,6 +98,7 @@ export default function AdminDashboard() {
       localStorage.setItem('residentSearchQuery', '');
       localStorage.setItem('residentGenderFilter', '');
       localStorage.setItem('residentStreetFilter', '');
+      localStorage.setItem('residentCardTypeFilter', '');
       navigate('/admin/residents');
     }
   };
@@ -110,6 +112,7 @@ export default function AdminDashboard() {
         localStorage.setItem('residentSearchQuery', '');
         localStorage.setItem('residentAgeFilter', '');
         localStorage.setItem('residentStreetFilter', '');
+        localStorage.setItem('residentCardTypeFilter', '');
         navigate('/admin/residents');
       }
     }
@@ -128,6 +131,7 @@ export default function AdminDashboard() {
             localStorage.removeItem('residentAgeFilter');
             localStorage.removeItem('residentGenderFilter');
             localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
             navigate('/admin/residents');
           }}
         >
@@ -141,6 +145,7 @@ export default function AdminDashboard() {
             localStorage.removeItem('residentSearchQuery');
             localStorage.removeItem('residentAgeFilter');
             localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
             navigate('/admin/residents');
           }}
         >
@@ -154,6 +159,7 @@ export default function AdminDashboard() {
             localStorage.removeItem('residentSearchQuery');
             localStorage.removeItem('residentAgeFilter');
             localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
             navigate('/admin/residents');
           }}
         >

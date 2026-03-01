@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiUrl } from '@/lib/apiConfig';
 
-export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '', genderFilter = '', streetFilter = '', isAdmin = false }) {
+export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '', genderFilter = '', streetFilter = '', cardTypeFilter = '', isAdmin = false }) {
   const { token } = useAuth();
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,15 +17,16 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
     pages: 0,
   });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPagination(prev => ({ ...prev, currentPage: 1 }));
-  }, [searchQuery, ageFilter, genderFilter, streetFilter]);
+  }, [searchQuery, ageFilter, genderFilter, streetFilter, cardTypeFilter]);
 
   useEffect(() => {
     fetchResidents();
-  }, [pagination.currentPage, pagination.pageSize, searchQuery, ageFilter, genderFilter, streetFilter]);
+  }, [pagination.currentPage, pagination.pageSize, searchQuery, ageFilter, genderFilter, streetFilter, cardTypeFilter]);
 
   const fetchResidents = async () => {
     setLoading(true);
@@ -49,6 +51,11 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
       // Add street filter if present
       if (streetFilter) {
         params.append('street', streetFilter);
+      }
+
+      // Add card type filter if present
+      if (cardTypeFilter) {
+        params.append('cardType', cardTypeFilter);
       }
 
       const endpoint = searchQuery
@@ -115,6 +122,85 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
       currentPage: 1,
       pageSize: parseInt(newSize),
     }));
+  };
+
+  const exportToExcel = async () => {
+    setIsExporting(true);
+    try {
+      const apiUrl = getApiUrl();
+      const params = new URLSearchParams({
+        page: 1,
+        limit: 10000, // Get all records
+      });
+
+      if (ageFilter) params.append('ageGroup', ageFilter);
+      if (genderFilter) params.append('gender', genderFilter);
+      if (streetFilter) params.append('street', streetFilter);
+      if (cardTypeFilter) params.append('cardType', cardTypeFilter);
+
+      const endpoint = searchQuery
+        ? `${apiUrl}/residents/search?${params}&query=${encodeURIComponent(searchQuery)}`
+        : `${apiUrl}/residents?${params}`;
+
+      const response = await fetch(endpoint, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch data for export');
+
+      const data = await response.json();
+      const residents = data.data || [];
+
+      if (residents.length === 0) {
+        alert('No data to export');
+        return;
+      }
+
+      // Format data for Excel
+      const exportData = residents.map((r, index) => ({
+        'No.': index + 1,
+        'Resident ID': r.resident_id,
+        'Household #': r.household_number,
+        'Last Name': r.last_name,
+        'First Name': r.first_name,
+        'Middle Name': r.middle_name || '',
+        'Gender': r.gender === 'M' ? 'Male' : 'Female',
+        'Date of Birth': r.date_of_birth,
+        'Age': r.age,
+        'Birth Place': r.birth_place || '',
+        'Address': r.address || '',
+        'Contact Number': r.contact_number || '',
+        'Civil Status': r.civil_status || '',
+        'Religion': r.religion || '',
+        'Educational Attainment': r.educational_attainment || '',
+        'Card Types': r.card_types ? JSON.parse(r.card_types).join(', ') : '',
+      }));
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Residents');
+
+      // Auto-size columns
+      const colWidths = Object.keys(exportData[0]).map(key => ({
+        wch: Math.max(key.length, ...exportData.map(row => String(row[key]).length)) + 2
+      }));
+      ws['!cols'] = colWidths;
+
+      // Generate filename with date
+      const date = new Date().toISOString().split('T')[0];
+      const filterSuffix = (searchQuery || ageFilter || genderFilter || streetFilter || cardTypeFilter) ? '_filtered' : '_all';
+      const filename = `residents${filterSuffix}_${date}.xlsx`;
+
+      // Download file
+      XLSX.writeFile(wb, filename);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export data: ' + err.message);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (loading && residents.length === 0) {
@@ -210,6 +296,19 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
                 </Button>
               </div>
             </div>
+
+            {/* Export Button - Admin Only */}
+            {isAdmin && (
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={exportToExcel}
+                  disabled={isExporting}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isExporting ? 'Exporting...' : `Export to Excel (${pagination.total} records)`}
+                </Button>
+              </div>
+            )}
           </>
         )}
 

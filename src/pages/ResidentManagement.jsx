@@ -9,18 +9,39 @@ import ResidentList from '@/components/ResidentList';
 export default function ResidentManagement() {
   const location = useLocation();
   const { token, user } = useAuth();
-  const [activeTab, setActiveTab] = useState('list'); // 'list', 'add', 'edit'
-  const [selectedResident, setSelectedResident] = useState(null);
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = localStorage.getItem('residentActiveTab');
+    return savedTab || 'list';
+  });
+  const [selectedResident, setSelectedResident] = useState(() => {
+    const saved = localStorage.getItem('residentSelectedResident');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('residentSearchQuery') || '');
   const [ageFilter, setAgeFilter] = useState(() => localStorage.getItem('residentAgeFilter') || '');
   const [genderFilter, setGenderFilter] = useState(() => localStorage.getItem('residentGenderFilter') || '');
   const [streetFilter, setStreetFilter] = useState(() => localStorage.getItem('residentStreetFilter') || '');
+  const [cardTypeFilter, setCardTypeFilter] = useState(() => localStorage.getItem('residentCardTypeFilter') || '');
   const [listRefreshKey, setListRefreshKey] = useState(0);
   const [formResetKey, setFormResetKey] = useState(0);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Persist activeTab to localStorage
+  useEffect(() => {
+    localStorage.setItem('residentActiveTab', activeTab);
+  }, [activeTab]);
+
+  // Persist selectedResident to localStorage
+  useEffect(() => {
+    if (selectedResident) {
+      localStorage.setItem('residentSelectedResident', JSON.stringify(selectedResident));
+    } else {
+      localStorage.removeItem('residentSelectedResident');
+    }
+  }, [selectedResident]);
 
   // Auto-close success popup after 3 seconds
   useEffect(() => {
@@ -49,6 +70,10 @@ export default function ResidentManagement() {
   useEffect(() => {
     localStorage.setItem('residentStreetFilter', streetFilter);
   }, [streetFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('residentCardTypeFilter', cardTypeFilter);
+  }, [cardTypeFilter]);
 
   // Determine dashboard path based on current URL
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -227,7 +252,7 @@ export default function ResidentManagement() {
                 <option value="Ruby">Ruby</option>
                 <option value="Pearl">Pearl</option>
                 <option value="Topaz">Topaz</option>
-                <option value="Turmaline">Turmaline</option>
+                <option value="Tourmaline">Tourmaline</option>
                 <option value="Sapphire">Sapphire</option>
                 <option value="Emerald">Emerald</option>
                 <option value="Amethyst">Amethyst</option>
@@ -236,7 +261,22 @@ export default function ResidentManagement() {
                 <option value="Quartz">Quartz</option>
               </select>
             </div>
-            {(searchQuery || ageFilter || genderFilter || streetFilter) && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 whitespace-nowrap">Card Type:</label>
+              <select
+                value={cardTypeFilter}
+                onChange={(e) => setCardTypeFilter(e.target.value)}
+                className="form-select w-auto min-w-[140px]"
+              >
+                <option value="">All Cards</option>
+                <option value="Yellow Card">Yellow Card</option>
+                <option value="Blue Card">Blue Card</option>
+                <option value="Green Card">Green Card</option>
+                <option value="PWD">PWD</option>
+                <option value="Senior Citizen Card">Senior Citizen Card</option>
+              </select>
+            </div>
+            {(searchQuery || ageFilter || genderFilter || streetFilter || cardTypeFilter) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -245,10 +285,12 @@ export default function ResidentManagement() {
                   setAgeFilter('');
                   setGenderFilter('');
                   setStreetFilter('');
+                  setCardTypeFilter('');
                   localStorage.removeItem('residentSearchQuery');
                   localStorage.removeItem('residentAgeFilter');
                   localStorage.removeItem('residentGenderFilter');
                   localStorage.removeItem('residentStreetFilter');
+                  localStorage.removeItem('residentCardTypeFilter');
                 }}
               >
                 Clear Filters
@@ -267,6 +309,7 @@ export default function ResidentManagement() {
           ageFilter={ageFilter}
           genderFilter={genderFilter}
           streetFilter={streetFilter}
+          cardTypeFilter={cardTypeFilter}
           isAdmin={user?.role === 'admin'}
         />
       )}

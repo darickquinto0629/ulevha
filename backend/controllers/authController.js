@@ -1,9 +1,16 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../database/db.js';
+import { JWT_SECRET, JWT_EXPIRE } from '../config/env.js';
 
-const SECRET = process.env.JWT_SECRET || 'your_secret_key';
-const EXPIRE = process.env.JWT_EXPIRE || '24h';
+const SECRET = JWT_SECRET;
+const EXPIRE = JWT_EXPIRE;
+
+// Email validation helper
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
 // Helper function to promisify database operations
 const dbRun = (query, params = []) => {
@@ -122,6 +129,14 @@ export const register = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Name, email, and password are required',
+      });
+    }
+
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format',
       });
     }
 

@@ -19,6 +19,12 @@ async function startBackendServer() {
   process.env.NODE_ENV = isDev ? 'development' : 'production';
   process.env.PORT = '3000';
   
+  // Set user data path for database storage (production only)
+  if (!isDev) {
+    process.env.ULEVHA_USER_DATA = app.getPath('userData');
+    console.log('User data path:', process.env.ULEVHA_USER_DATA);
+  }
+  
   // Change working directory so relative paths in server.js work
   process.chdir(appPath);
   

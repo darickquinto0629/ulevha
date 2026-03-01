@@ -63,6 +63,7 @@ export const getAllResidents = async (req, res) => {
     const ageGroup = req.query.ageGroup || '';
     const gender = req.query.gender || '';
     const street = req.query.street || '';
+    const cardType = req.query.cardType || '';
     const offset = (page - 1) * limit;
 
     let query = 'SELECT * FROM residents WHERE is_active = 1';
@@ -99,6 +100,13 @@ export const getAllResidents = async (req, res) => {
       query += ` AND address = ?`;
       countQuery += ` AND address = ?`;
       params = [...params, street];
+    }
+
+    // Add card type filter
+    if (cardType) {
+      query += ` AND card_types LIKE ?`;
+      countQuery += ` AND card_types LIKE ?`;
+      params = [...params, `%${cardType}%`];
     }
 
     // Get total count
@@ -176,6 +184,7 @@ export const createResident = async (req, res) => {
       religion,
       educational_attainment,
       educational_attainment_other,
+      card_types,
     } = req.body || {};
 
     // Validate required fields
@@ -200,7 +209,7 @@ export const createResident = async (req, res) => {
     );
     
     const nextNumber = (maxIdResult?.max_id || 0) + 1;
-    const resident_id = `RES-${String(nextNumber).padStart(3, '0')}`;
+    const resident_id = `RES-${String(nextNumber).padStart(5, '0')}`;
 
     // Calculate age
     const age = calculateAge(date_of_birth);
@@ -210,12 +219,13 @@ export const createResident = async (req, res) => {
       `INSERT INTO residents (
         household_number, resident_id, philsys_number, first_name, last_name, middle_name,
         gender, date_of_birth, birth_place, age, address, contact_number, civil_status,
-        religion, educational_attainment, educational_attainment_other
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        religion, educational_attainment, educational_attainment_other, card_types
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         household_number, resident_id, philsys_number, first_name, last_name, middle_name,
         gender, date_of_birth, birth_place, age, address, contact_number, civil_status,
         religion, educational_attainment, educational_attainment_other,
+        card_types ? JSON.stringify(card_types) : null,
       ]
     );
 
@@ -260,6 +270,7 @@ export const updateResident = async (req, res) => {
       religion,
       educational_attainment,
       educational_attainment_other,
+      card_types,
     } = req.body;
 
     // Check if resident exists
@@ -313,12 +324,14 @@ export const updateResident = async (req, res) => {
         religion = COALESCE(?, religion),
         educational_attainment = COALESCE(?, educational_attainment),
         educational_attainment_other = COALESCE(?, educational_attainment_other),
+        card_types = COALESCE(?, card_types),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`,
       [
         household_number, resident_id, philsys_number, first_name, last_name, middle_name,
         gender, date_of_birth, birth_place, age, address, contact_number, civil_status,
-        religion, educational_attainment, educational_attainment_other, id,
+        religion, educational_attainment, educational_attainment_other,
+        card_types ? JSON.stringify(card_types) : null, id,
       ]
     );
 
@@ -368,9 +381,9 @@ export const deleteResident = async (req, res) => {
 // Search residents
 export const searchResidents = async (req, res) => {
   try {
-    const { query, page = 1, limit = 10, ageGroup = '', gender = '', street = '' } = req.query;
+    const { query, page = 1, limit = 10, ageGroup = '', gender = '', street = '', cardType = '' } = req.query;
 
-    if (!query && !ageGroup && !gender && !street) {
+    if (!query && !ageGroup && !gender && !street && !cardType) {
       return res.status(400).json({
         success: false,
         error: 'Search query or filter is required',
@@ -413,6 +426,12 @@ export const searchResidents = async (req, res) => {
     if (street) {
       whereConditions.push(`address = ?`);
       params.push(street);
+    }
+
+    // Add card type filter
+    if (cardType) {
+      whereConditions.push(`card_types LIKE ?`);
+      params.push(`%${cardType}%`);
     }
 
     const whereClause = whereConditions.join(' AND ');

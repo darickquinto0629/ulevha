@@ -44,6 +44,7 @@ export default function StaffLayout() {
             </div>
           ))}
           
+          {/* Quick Actions - Hidden for now
           <p className="dashboard-sidebar-section">Quick Actions</p>
           {navItems.slice(2).map((item) => (
             <div
@@ -55,6 +56,7 @@ export default function StaffLayout() {
               <span className="sidebar-nav-text">{item.label}</span>
             </div>
           ))}
+          */}
         </nav>
 
         {/* Info section at bottom */}

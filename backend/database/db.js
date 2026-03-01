@@ -1,11 +1,48 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.resolve(__dirname, 'ulevha.db');
+// Determine database path based on environment
+function getDatabasePath() {
+  // Check if running in Electron production mode
+  const isElectronProd = process.env.NODE_ENV === 'production' && 
+    (process.versions && process.versions.electron);
+  
+  if (isElectronProd) {
+    // In production Electron, use userData directory (writable location)
+    // This will be set by main.cjs before importing this module
+    const userDataPath = process.env.ULEVHA_USER_DATA || 
+      path.join(process.env.APPDATA || process.env.HOME, 'Ulevha');
+    
+    // Ensure the directory exists
+    if (!fs.existsSync(userDataPath)) {
+      fs.mkdirSync(userDataPath, { recursive: true });
+    }
+    
+    const dbPath = path.join(userDataPath, 'ulevha.db');
+    
+    // Copy template database if it doesn't exist yet
+    if (!fs.existsSync(dbPath)) {
+      const templatePath = path.resolve(__dirname, 'ulevha.db');
+      if (fs.existsSync(templatePath)) {
+        fs.copyFileSync(templatePath, dbPath);
+        console.log('✓ Database copied to user data directory');
+      }
+    }
+    
+    return dbPath;
+  }
+  
+  // Development: use local database
+  return path.resolve(__dirname, 'ulevha.db');
+}
+
+const dbPath = getDatabasePath();
+console.log('Database path:', dbPath);
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
@@ -106,6 +143,7 @@ const initializeDatabase = () => {
         religion TEXT,
         educational_attainment TEXT,
         educational_attainment_other TEXT,
+        card_types TEXT,
         is_active BOOLEAN DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

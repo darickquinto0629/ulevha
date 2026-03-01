@@ -21,6 +21,7 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
     religion: '',
     educational_attainment: 'Elementary',
     educational_attainment_other: '',
+    card_types: [],
   });
 
   const [errors, setErrors] = useState({});
@@ -28,7 +29,12 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
 
   useEffect(() => {
     if (resident) {
-      setFormData(resident);
+      setFormData({
+        ...resident,
+        card_types: typeof resident.card_types === 'string' 
+          ? JSON.parse(resident.card_types || '[]') 
+          : (resident.card_types || []),
+      });
     }
   }, [resident]);
 
@@ -65,6 +71,39 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
         [name]: '',
       }));
     }
+  };
+
+  const handleCheckboxChange = (e) => {
+    const { value, checked } = e.target;
+    setFormData(prev => {
+      const currentTypes = prev.card_types || [];
+      return {
+        ...prev,
+        card_types: checked
+          ? [...currentTypes, value]
+          : currentTypes.filter(item => item !== value),
+      };
+    });
+  };
+
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return 0;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const getCardTypeOptions = () => {
+    const baseOptions = ['Yellow Card', 'Blue Card', 'Green Card', 'PWD'];
+    if (calculateAge(formData.date_of_birth) >= 60) {
+      baseOptions.push('Senior Citizen Card');
+    }
+    return baseOptions;
   };
 
   const handleSubmit = async (e) => {
@@ -126,7 +165,7 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
               <option value="Ruby">Ruby</option>
               <option value="Pearl">Pearl</option>
               <option value="Topaz">Topaz</option>
-              <option value="Turmaline">Turmaline</option>
+              <option value="Tourmaline">Tourmaline</option>
               <option value="Sapphire">Sapphire</option>
               <option value="Emerald">Emerald</option>
               <option value="Amethyst">Amethyst</option>
@@ -261,37 +300,57 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
           </div>
 
           {/* Educational Attainment */}
-          <div className="form-group">
-            <label className="form-label">Highest Educational Attainment</label>
-            <div className="space-y-2 mt-2">
-              {['Elementary', 'Highschool', 'College Undergraduate', 'College Graduate', 'Post Graduate', 'Vocational', 'Others please specify'].map((option) => (
-                <label key={option} className="flex items-center">
+          <div className="grid-3-cols">
+            <div className="form-group">
+              <label className="form-label">Highest Educational Attainment</label>
+              <div className="space-y-2 mt-2">
+                {['Elementary', 'Highschool', 'College Undergraduate', 'College Graduate', 'Post Graduate', 'Vocational', 'Others please specify'].map((option) => (
+                  <label key={option} className="flex items-center">
+                    <input
+                      type="radio"
+                      name="educational_attainment"
+                      value={option}
+                      checked={formData.educational_attainment === option}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">{option}</span>
+                  </label>
+                ))}
+              </div>
+
+              {formData.educational_attainment === 'Others please specify' && (
+                <div className="mt-2">
                   <input
-                    type="radio"
-                    name="educational_attainment"
-                    value={option}
-                    checked={formData.educational_attainment === option}
+                    type="text"
+                    name="educational_attainment_other"
+                    value={formData.educational_attainment_other}
                     onChange={handleInputChange}
-                    className="mr-2"
+                    placeholder="Please specify"
+                    className={inputClass('educational_attainment_other')}
                   />
-                  <span className="text-sm">{option}</span>
-                </label>
-              ))}
+                  {errors.educational_attainment_other && <p className="form-error">{errors.educational_attainment_other}</p>}
+                </div>
+              )}
             </div>
 
-            {formData.educational_attainment === 'Others please specify' && (
-              <div className="mt-2">
-                <input
-                  type="text"
-                  name="educational_attainment_other"
-                  value={formData.educational_attainment_other}
-                  onChange={handleInputChange}
-                  placeholder="Please specify"
-                  className={inputClass('educational_attainment_other')}
-                />
-                {errors.educational_attainment_other && <p className="form-error">{errors.educational_attainment_other}</p>}
+            <div className="form-group">
+              <label className="form-label">Type of Card</label>
+              <div className="space-y-2 mt-2">
+                {getCardTypeOptions().map((option) => (
+                  <label key={option} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      value={option}
+                      checked={formData.card_types?.includes(option) || false}
+                      onChange={handleCheckboxChange}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">{option}</span>
+                  </label>
+                ))}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Submit Button */}

@@ -45,6 +45,7 @@
     "sqlite3": "^5.1.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -85,25 +86,34 @@
     ],
     "extraResources": [
       {
-        "from": "ulevha.db",
+        "from": "backend/database/ulevha.db",
         "to": "ulevha.db"
       }
     ],
     "win": {
-      "target": ["portable"],
-      "icon": "public/icon.ico",
+      "target": [
+        "portable",
+        "nsis"
+      ],
       "signAndEditExecutable": false
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Ulevha-Setup-${version}.exe"
+    },
     "portable": {
-      "artifactName": "Ulevha-Portable.exe"
+      "artifactName": "Ulevha-Portable-${version}.exe"
     },
     "mac": {
-      "target": ["dmg"],
-      "icon": "public/icon.icns"
+      "target": [
+        "dmg"
+      ]
     },
     "linux": {
-      "target": ["AppImage"],
-      "icon": "public/icon.png"
+      "target": [
+        "AppImage"
+      ]
     }
   }
 }
