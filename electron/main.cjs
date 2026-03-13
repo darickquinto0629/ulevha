@@ -1,5 +1,7 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 
 // Keep a global reference of the window object
@@ -7,6 +9,20 @@ let mainWindow;
 let serverModule = null;
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+// Get or create JWT secret for production
+function getOrCreateJwtSecret(userDataPath) {
+  const secretPath = path.join(userDataPath, '.jwt-secret');
+  
+  if (fs.existsSync(secretPath)) {
+    return fs.readFileSync(secretPath, 'utf8').trim();
+  }
+  
+  // Generate a new random secret
+  const secret = crypto.randomBytes(64).toString('hex');
+  fs.writeFileSync(secretPath, secret, { mode: 0o600 });
+  return secret;
+}
 
 async function startBackendServer() {
   // In production, app.getAppPath() points to resources/app where our files are
@@ -18,6 +34,15 @@ async function startBackendServer() {
   // Set environment variables before importing
   process.env.NODE_ENV = isDev ? 'development' : 'production';
   process.env.PORT = '3000';
+  
+  // Set user data path for database storage (production only)
+  if (!isDev) {
+    process.env.ULEVHA_USER_DATA = app.getPath('userData');
+    console.log('User data path:', process.env.ULEVHA_USER_DATA);
+    
+    // Set JWT_SECRET for production (generate if not exists)
+    process.env.JWT_SECRET = getOrCreateJwtSecret(app.getPath('userData'));
+  }
   
   // Change working directory so relative paths in server.js work
   process.chdir(appPath);

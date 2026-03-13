@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import AdminDashboard from '@/pages/AdminDashboard';
 import ResidentManagement from '@/pages/ResidentManagement';
 import UserManagement from '@/pages/UserManagement';
+import BusinessEstablishments from '@/pages/BusinessEstablishments';
 
 const navItems = [
   { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
   { path: '/admin/residents', icon: '👨‍👩‍👧‍👦', label: 'Residents' },
+  { path: '/admin/businesses', icon: '🏪', label: 'Business Establishments' },
   { path: '/admin/users', icon: '👥', label: 'User Management' },
   { path: '/admin/logs', icon: '📋', label: 'Audit Logs', disabled: true },
   { path: '/admin/backup', icon: '💾', label: 'Backup', disabled: true },
@@ -26,6 +28,16 @@ export default function AdminLayout() {
     window.location.href = '/login';
   };
 
+  const handleNavClick = (path) => {
+    // Reset to list view when navigating to residents from sidebar
+    if (path.includes('/residents')) {
+      localStorage.setItem('residentActiveTab', 'list');
+      localStorage.setItem('residentCurrentPage', '1');
+      localStorage.removeItem('residentSelectedResident');
+    }
+    navigate(path);
+  };
+
   return (
     <div className="dashboard-layout">
       {/* Sidebar */}
@@ -36,11 +48,11 @@ export default function AdminLayout() {
         </div>
         <nav className="dashboard-sidebar-nav">
           <p className="dashboard-sidebar-section">Main Menu</p>
-          {navItems.slice(0, 2).map((item) => (
+          {navItems.slice(0, 3).map((item) => (
             <div
               key={item.path}
               className={location.pathname === item.path ? 'sidebar-nav-item-active' : 'sidebar-nav-item'}
-              onClick={() => !item.disabled && navigate(item.path)}
+              onClick={() => !item.disabled && handleNavClick(item.path)}
             >
               <span className="sidebar-nav-icon">{item.icon}</span>
               <span className="sidebar-nav-text">{item.label}</span>
@@ -48,11 +60,11 @@ export default function AdminLayout() {
           ))}
           
           <p className="dashboard-sidebar-section">Administration</p>
-          {navItems.slice(2, 3).map((item) => (
+          {navItems.slice(3, 4).map((item) => (
             <div
               key={item.path}
               className={`${location.pathname === item.path ? 'sidebar-nav-item-active' : 'sidebar-nav-item'} ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => !item.disabled && navigate(item.path)}
+              onClick={() => !item.disabled && handleNavClick(item.path)}
             >
               <span className="sidebar-nav-icon">{item.icon}</span>
               <span className="sidebar-nav-text">{item.label}</span>
@@ -60,11 +72,11 @@ export default function AdminLayout() {
           ))}
           
           <p className="dashboard-sidebar-section">System</p>
-          {navItems.slice(3).map((item) => (
+          {navItems.slice(4).map((item) => (
             <div
               key={item.path}
               className={`${location.pathname === item.path ? 'sidebar-nav-item-active' : 'sidebar-nav-item'} ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => !item.disabled && navigate(item.path)}
+              onClick={() => !item.disabled && handleNavClick(item.path)}
             >
               <span className="sidebar-nav-icon">{item.icon}</span>
               <span className="sidebar-nav-text">{item.label}</span>
@@ -91,6 +103,7 @@ export default function AdminLayout() {
           <Routes>
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="residents" element={<ResidentManagement />} />
+            <Route path="businesses" element={<BusinessEstablishments />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>

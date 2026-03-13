@@ -7,6 +7,7 @@ import {
   deleteResident,
   searchResidents,
   getResidentStats,
+  getBusinessEstablishments,
 } from '../controllers/residentController.js';
 import { authenticateToken, authorizeRole } from '../middleware/auth.js';
 
@@ -20,6 +21,9 @@ router.get('/', getAllResidents);
 
 // Get resident statistics
 router.get('/stats', getResidentStats);
+
+// Get business establishments
+router.get('/businesses', getBusinessEstablishments);
 
 // Search residents
 router.get('/search', searchResidents);

@@ -128,7 +128,7 @@ export default function LoginPage() {
             </Button>
 
             {/* Demo Credentials */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 hidden">
               <p className="text-xs font-semibold text-blue-900 mb-2">Demo Credentials:</p>
               <div className="space-y-1 text-xs text-blue-800">
                 <p>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiCall } from '@/lib/apiConfig';
@@ -19,6 +20,7 @@ import {
 const GENDER_COLORS = ['#3b82f6', '#ec4899', '#8b5cf6'];
 
 export default function StaffDashboard() {
+  const navigate = useNavigate();
   const { token } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -72,21 +74,110 @@ export default function StaffDashboard() {
     return stats.byAge;
   };
 
+  const getStreetChartData = () => {
+    if (!stats?.byStreet) return [];
+    return stats.byStreet;
+  };
+
+  const handleStreetClick = (data) => {
+    if (data?.street) {
+      localStorage.setItem('residentStreetFilter', data.street);
+      localStorage.setItem('residentSearchQuery', '');
+      localStorage.setItem('residentAgeFilter', '');
+      localStorage.setItem('residentGenderFilter', '');
+      localStorage.setItem('residentCardTypeFilter', '');
+      localStorage.setItem('residentActiveTab', 'list');
+      localStorage.setItem('residentCurrentPage', '1');
+      localStorage.removeItem('residentSelectedResident');
+      navigate('/staff/residents');
+    }
+  };
+
+  const handleAgeClick = (data) => {
+    if (data?.ageGroup) {
+      localStorage.setItem('residentAgeFilter', data.ageGroup);
+      localStorage.setItem('residentSearchQuery', '');
+      localStorage.setItem('residentGenderFilter', '');
+      localStorage.setItem('residentStreetFilter', '');
+      localStorage.setItem('residentCardTypeFilter', '');
+      localStorage.setItem('residentActiveTab', 'list');
+      localStorage.setItem('residentCurrentPage', '1');
+      localStorage.removeItem('residentSelectedResident');
+      navigate('/staff/residents');
+    }
+  };
+
+  const handleGenderClick = (data) => {
+    if (data?.name) {
+      const genderCode = data.name === 'Male' ? 'M' : data.name === 'Female' ? 'F' : '';
+      if (genderCode) {
+        localStorage.setItem('residentGenderFilter', genderCode);
+        localStorage.setItem('residentSearchQuery', '');
+        localStorage.setItem('residentAgeFilter', '');
+        localStorage.setItem('residentStreetFilter', '');
+        localStorage.setItem('residentCardTypeFilter', '');
+        localStorage.setItem('residentActiveTab', 'list');
+        localStorage.setItem('residentCurrentPage', '1');
+        localStorage.removeItem('residentSelectedResident');
+        navigate('/staff/residents');
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900">Overview</h2>
       
       {/* Statistics Cards - Compact Row */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="stat-card-compact">
+      <div className="stats-row">
+        <div 
+          className="stat-card-compact cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            localStorage.removeItem('residentSearchQuery');
+            localStorage.removeItem('residentAgeFilter');
+            localStorage.removeItem('residentGenderFilter');
+            localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
+            navigate('/staff/residents');
+          }}
+        >
           <p className="stat-title">Total Residents</p>
           <p className="stat-value">{loading ? '...' : stats?.total || 0}</p>
         </div>
-        <div className="stat-card-compact">
+        <div 
+          className="stat-card-compact cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            localStorage.setItem('residentGenderFilter', 'M');
+            localStorage.removeItem('residentSearchQuery');
+            localStorage.removeItem('residentAgeFilter');
+            localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
+            navigate('/staff/residents');
+          }}
+        >
           <p className="stat-title">Male</p>
           <p className="stat-value-blue">{loading ? '...' : getMaleCount()}</p>
         </div>
-        <div className="stat-card-compact">
+        <div 
+          className="stat-card-compact cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            localStorage.setItem('residentGenderFilter', 'F');
+            localStorage.removeItem('residentSearchQuery');
+            localStorage.removeItem('residentAgeFilter');
+            localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
+            navigate('/staff/residents');
+          }}
+        >
           <p className="stat-title">Female</p>
           <p className="stat-value-pink">{loading ? '...' : getFemaleCount()}</p>
         </div>
@@ -110,7 +201,13 @@ export default function StaffDashboard() {
                     <XAxis dataKey="ageGroup" tick={{ fontSize: 12 }} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar 
+                      dataKey="count" 
+                      fill="#3b82f6" 
+                      radius={[4, 4, 0, 0]} 
+                      onClick={handleAgeClick}
+                      style={{ cursor: 'pointer' }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -141,6 +238,8 @@ export default function StaffDashboard() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
+                      onClick={handleGenderClick}
+                      style={{ cursor: 'pointer' }}
                     >
                       {getGenderChartData().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
@@ -157,6 +256,38 @@ export default function StaffDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Street Distribution Chart */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Residents by Street</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            {loading ? (
+              <div className="chart-placeholder">Loading...</div>
+            ) : getStreetChartData().length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getStreetChartData()} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="street" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" height={80} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar 
+                    dataKey="count" 
+                    fill="#10b981" 
+                    radius={[4, 4, 0, 0]} 
+                    onClick={handleStreetClick}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="chart-placeholder">No data available</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

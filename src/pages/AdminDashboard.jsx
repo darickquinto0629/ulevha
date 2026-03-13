@@ -86,6 +86,10 @@ export default function AdminDashboard() {
       localStorage.setItem('residentSearchQuery', '');
       localStorage.setItem('residentAgeFilter', '');
       localStorage.setItem('residentGenderFilter', '');
+      localStorage.setItem('residentCardTypeFilter', '');
+      localStorage.setItem('residentActiveTab', 'list');
+      localStorage.setItem('residentCurrentPage', '1');
+      localStorage.removeItem('residentSelectedResident');
       navigate('/admin/residents');
     }
   };
@@ -97,6 +101,10 @@ export default function AdminDashboard() {
       localStorage.setItem('residentSearchQuery', '');
       localStorage.setItem('residentGenderFilter', '');
       localStorage.setItem('residentStreetFilter', '');
+      localStorage.setItem('residentCardTypeFilter', '');
+      localStorage.setItem('residentActiveTab', 'list');
+      localStorage.setItem('residentCurrentPage', '1');
+      localStorage.removeItem('residentSelectedResident');
       navigate('/admin/residents');
     }
   };
@@ -110,6 +118,10 @@ export default function AdminDashboard() {
         localStorage.setItem('residentSearchQuery', '');
         localStorage.setItem('residentAgeFilter', '');
         localStorage.setItem('residentStreetFilter', '');
+        localStorage.setItem('residentCardTypeFilter', '');
+        localStorage.setItem('residentActiveTab', 'list');
+        localStorage.setItem('residentCurrentPage', '1');
+        localStorage.removeItem('residentSelectedResident');
         navigate('/admin/residents');
       }
     }
@@ -128,6 +140,10 @@ export default function AdminDashboard() {
             localStorage.removeItem('residentAgeFilter');
             localStorage.removeItem('residentGenderFilter');
             localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
             navigate('/admin/residents');
           }}
         >
@@ -141,6 +157,10 @@ export default function AdminDashboard() {
             localStorage.removeItem('residentSearchQuery');
             localStorage.removeItem('residentAgeFilter');
             localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
             navigate('/admin/residents');
           }}
         >
@@ -154,6 +174,10 @@ export default function AdminDashboard() {
             localStorage.removeItem('residentSearchQuery');
             localStorage.removeItem('residentAgeFilter');
             localStorage.removeItem('residentStreetFilter');
+            localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
             navigate('/admin/residents');
           }}
         >

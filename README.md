@@ -17,7 +17,7 @@ A comprehensive CRUD application designed for managing resident information at E
 ### Resident Data Fields
 - Household Number
 - PhilSys Card Number
-- Street (dropdown: Diamond, Ruby, Pearl, Topaz, Turmaline, Sapphire, Emerald, Amethyst, Jade, Opal, Quartz)
+- Street (dropdown: Diamond, Ruby, Pearl, Topaz, Tourmaline, Sapphire, Emerald, Amethyst, Jade, Opal, Quartz)
 - First Name, Middle Name, Last Name
 - Gender, Date of Birth, Birth Place
 - Contact Number, Religion

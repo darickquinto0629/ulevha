@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import './backend/config/env.js'; // Load env first
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
@@ -6,8 +6,6 @@ import db from './backend/database/db.js';
 import authRoutes from './backend/routes/authRoutes.js';
 import userRoutes from './backend/routes/userRoutes.js';
 import residentRoutes from './backend/routes/residentRoutes.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

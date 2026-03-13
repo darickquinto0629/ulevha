@@ -1,31 +1,5 @@
-import db from '../database/db.js';
-
-const dbRun = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve(this);
-    });
-  });
-};
-
-const dbGet = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-};
-
-const dbAll = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-};
+import { dbRun, dbGet, dbAll } from '../database/db.js';
+import { isValidEmail } from '../utils/validators.js';
 
 // Get all users (Admin only)
 export const getAllUsers = async (req, res) => {
@@ -136,6 +110,14 @@ export const createUser = async (req, res) => {
       });
     }
 
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format',
+      });
+    }
+
     // Check if user exists
     const existingUser = await dbGet('SELECT id FROM users WHERE email = ?', [email]);
     if (existingUser) {
@@ -214,6 +196,14 @@ export const updateUser = async (req, res) => {
 
     // Check if email is already taken (if changed)
     if (email) {
+      // Validate email format
+      if (!isValidEmail(email)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid email format',
+        });
+      }
+
       const emailExists = await dbGet('SELECT id FROM users WHERE email = ? AND id != ?', [email, id]);
       if (emailExists) {
         return res.status(409).json({
