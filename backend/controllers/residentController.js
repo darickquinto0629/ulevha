@@ -1,58 +1,5 @@
-import db from '../database/db.js';
-
-// Helper functions to promisify database operations
-const dbRun = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve(this);
-    });
-  });
-};
-
-const dbGet = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-};
-
-const dbAll = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows || []);
-    });
-  });
-};
-
-// Calculate age from date of birth
-const calculateAge = (dateOfBirth) => {
-  const today = new Date();
-  const birthDate = new Date(dateOfBirth);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-
-  return age;
-};
-
-// Helper function to get age range condition for SQL
-const getAgeRangeCondition = (ageGroup) => {
-  const ageRanges = {
-    '0-17': { min: 0, max: 17 },
-    '18-30': { min: 18, max: 30 },
-    '31-45': { min: 31, max: 45 },
-    '46-59': { min: 46, max: 59 },
-    '60+': { min: 60, max: 200 },
-  };
-  return ageRanges[ageGroup] || null;
-};
+import { dbRun, dbGet, dbAll } from '../database/db.js';
+import { calculateAge, getAgeRangeCondition } from '../utils/validators.js';
 
 // Get all residents with pagination
 export const getAllResidents = async (req, res) => {
@@ -78,13 +25,12 @@ export const getAllResidents = async (req, res) => {
       params = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
     }
 
-    // Add age group filter
+    // Add age group filter (calculated dynamically from date_of_birth)
     if (ageGroup) {
-      const ageRange = getAgeRangeCondition(ageGroup);
-      if (ageRange) {
-        query += ` AND age >= ? AND age <= ?`;
-        countQuery += ` AND age >= ? AND age <= ?`;
-        params = [...params, ageRange.min, ageRange.max];
+      const ageCondition = getAgeRangeCondition(ageGroup);
+      if (ageCondition) {
+        query += ` AND date_of_birth IS NOT NULL AND ${ageCondition}`;
+        countQuery += ` AND date_of_birth IS NOT NULL AND ${ageCondition}`;
       }
     }
 
@@ -181,10 +127,18 @@ export const createResident = async (req, res) => {
       address,
       contact_number,
       civil_status,
+      occupation,
+      family_position,
       religion,
       educational_attainment,
       educational_attainment_other,
       card_types,
+      is_head_of_family,
+      is_business_owner,
+      business_name,
+      business_type,
+      business_address,
+      business_phone,
     } = req.body || {};
 
     // Validate required fields
@@ -219,13 +173,16 @@ export const createResident = async (req, res) => {
       `INSERT INTO residents (
         household_number, resident_id, philsys_number, first_name, last_name, middle_name,
         gender, date_of_birth, birth_place, age, address, contact_number, civil_status,
-        religion, educational_attainment, educational_attainment_other, card_types
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        occupation, family_position, religion, educational_attainment, educational_attainment_other, card_types,
+        is_head_of_family, is_business_owner, business_name, business_type, business_address, business_phone
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         household_number, resident_id, philsys_number, first_name, last_name, middle_name,
         gender, date_of_birth, birth_place, age, address, contact_number, civil_status,
-        religion, educational_attainment, educational_attainment_other,
+        occupation, family_position, religion, educational_attainment, educational_attainment_other,
         card_types ? JSON.stringify(card_types) : null,
+        is_head_of_family ? 1 : 0,
+        is_business_owner ? 1 : 0, business_name, business_type, business_address, business_phone,
       ]
     );
 
@@ -241,6 +198,14 @@ export const createResident = async (req, res) => {
       },
       message: 'Resident created successfully',
     });
+
+    // Audit log (fire and forget)
+    if (req.user?.id) {
+      dbRun(
+        `INSERT INTO audit_logs (user_id, action, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, 'RESIDENT_CREATED', `Created resident: ${first_name} ${last_name} (${resident_id})`, req.ip || '', req.get('user-agent') || '']
+      ).catch(() => {});
+    }
   } catch (error) {
     console.error('Error creating resident:', error);
     res.status(500).json({
@@ -267,10 +232,18 @@ export const updateResident = async (req, res) => {
       address,
       contact_number,
       civil_status,
+      occupation,
+      family_position,
       religion,
       educational_attainment,
       educational_attainment_other,
       card_types,
+      is_head_of_family,
+      is_business_owner,
+      business_name,
+      business_type,
+      business_address,
+      business_phone,
     } = req.body;
 
     // Check if resident exists
@@ -285,12 +258,10 @@ export const updateResident = async (req, res) => {
     // Check if resident_id already exists (for other residents)
     // Note: household_number is NOT unique - multiple residents can share the same household
     if (resident_id) {
-      console.log('[UPDATE] Checking duplicate resident_id:', resident_id, 'for id:', id);
       const duplicateResidentId = await dbGet(
         'SELECT id FROM residents WHERE resident_id = ? AND id != ?',
         [resident_id, id]
       );
-      console.log('[UPDATE] Duplicate resident_id check result:', duplicateResidentId);
       if (duplicateResidentId) {
         return res.status(400).json({
           success: false,
@@ -321,19 +292,38 @@ export const updateResident = async (req, res) => {
         address = COALESCE(?, address),
         contact_number = COALESCE(?, contact_number),
         civil_status = COALESCE(?, civil_status),
+        occupation = COALESCE(?, occupation),
+        family_position = COALESCE(?, family_position),
         religion = COALESCE(?, religion),
         educational_attainment = COALESCE(?, educational_attainment),
         educational_attainment_other = COALESCE(?, educational_attainment_other),
         card_types = COALESCE(?, card_types),
+        is_head_of_family = ?,
+        is_business_owner = ?,
+        business_name = ?,
+        business_type = ?,
+        business_address = ?,
+        business_phone = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`,
       [
         household_number, resident_id, philsys_number, first_name, last_name, middle_name,
         gender, date_of_birth, birth_place, age, address, contact_number, civil_status,
-        religion, educational_attainment, educational_attainment_other,
-        card_types ? JSON.stringify(card_types) : null, id,
+        occupation, family_position, religion, educational_attainment, educational_attainment_other,
+        card_types ? JSON.stringify(card_types) : null,
+        is_head_of_family ? 1 : 0,
+        is_business_owner ? 1 : 0, business_name || '', business_type || '', 
+        business_address || '', business_phone || '', id,
       ]
     );
+
+    // Audit log (fire and forget)
+    if (req.user?.id) {
+      dbRun(
+        `INSERT INTO audit_logs (user_id, action, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, 'RESIDENT_UPDATED', `Updated resident ID: ${id}`, req.ip || '', req.get('user-agent') || '']
+      ).catch(() => {});
+    }
 
     res.status(200).json({
       success: true,
@@ -364,6 +354,14 @@ export const deleteResident = async (req, res) => {
 
     // Soft delete - mark as inactive
     await dbRun('UPDATE residents SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [id]);
+
+    // Audit log (fire and forget)
+    if (req.user?.id) {
+      dbRun(
+        `INSERT INTO audit_logs (user_id, action, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, 'RESIDENT_DELETED', `Soft-deleted resident ID: ${id}`, req.ip || '', req.get('user-agent') || '']
+      ).catch(() => {});
+    }
 
     res.status(200).json({
       success: true,
@@ -407,12 +405,11 @@ export const searchResidents = async (req, res) => {
       params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
     }
 
-    // Add age group filter
+    // Add age group filter (calculated dynamically from date_of_birth)
     if (ageGroup) {
-      const ageRange = getAgeRangeCondition(ageGroup);
-      if (ageRange) {
-        whereConditions.push(`age >= ? AND age <= ?`);
-        params.push(ageRange.min, ageRange.max);
+      const ageCondition = getAgeRangeCondition(ageGroup);
+      if (ageCondition) {
+        whereConditions.push(`date_of_birth IS NOT NULL AND ${ageCondition}`);
       }
     }
 
@@ -469,6 +466,64 @@ export const searchResidents = async (req, res) => {
   }
 };
 
+// Get business establishments (residents with is_business_owner = true)
+export const getBusinessEstablishments = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+
+    let whereConditions = ['is_business_owner = 1'];
+    let params = [];
+
+    if (search) {
+      whereConditions.push(`(
+        business_name LIKE ? OR 
+        business_type LIKE ? OR 
+        first_name LIKE ? OR 
+        last_name LIKE ? OR
+        business_address LIKE ? OR
+        address LIKE ?
+      )`);
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
+    }
+
+    const whereClause = whereConditions.join(' AND ');
+
+    const businesses = await dbAll(
+      `SELECT * FROM residents 
+       WHERE ${whereClause}
+       ORDER BY business_name ASC 
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    const countResult = await dbGet(
+      `SELECT COUNT(*) as count FROM residents WHERE ${whereClause}`,
+      params
+    );
+
+    res.status(200).json({
+      success: true,
+      data: businesses,
+      pagination: {
+        page,
+        limit,
+        total: countResult.count,
+        pages: Math.ceil(countResult.count / limit),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching business establishments:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch business establishments',
+    });
+  }
+};
+
 // Get resident statistics
 export const getResidentStats = async (req, res) => {
   try {
@@ -488,33 +543,30 @@ export const getResidentStats = async (req, res) => {
       'SELECT address as street, COUNT(*) as count FROM residents WHERE is_active = 1 AND address IS NOT NULL AND address != "" GROUP BY address ORDER BY count DESC'
     );
 
-    // Get all residents with date_of_birth to calculate age distribution
-    const residents = await dbAll(
-      'SELECT date_of_birth FROM residents WHERE is_active = 1 AND date_of_birth IS NOT NULL'
-    );
-
-    // Calculate age distribution
-    const ageGroups = {
-      '0-17': 0,
-      '18-30': 0,
-      '31-45': 0,
-      '46-59': 0,
-      '60+': 0,
-    };
-
-    residents.forEach((resident) => {
-      const age = calculateAge(resident.date_of_birth);
-      if (age <= 17) ageGroups['0-17']++;
-      else if (age <= 30) ageGroups['18-30']++;
-      else if (age <= 45) ageGroups['31-45']++;
-      else if (age <= 59) ageGroups['46-59']++;
-      else ageGroups['60+']++;
-    });
-
-    const byAge = Object.entries(ageGroups).map(([ageGroup, count]) => ({
-      ageGroup,
-      count,
-    }));
+    // Optimized: Calculate age distribution directly in SQL instead of fetching all rows
+    const ageCalc = "CAST((julianday('now') - julianday(date_of_birth)) / 365.25 AS INTEGER)";
+    const byAge = await dbAll(`
+      SELECT 
+        CASE 
+          WHEN ${ageCalc} <= 17 THEN '0-17'
+          WHEN ${ageCalc} <= 30 THEN '18-30'
+          WHEN ${ageCalc} <= 45 THEN '31-45'
+          WHEN ${ageCalc} <= 59 THEN '46-59'
+          ELSE '60+'
+        END as ageGroup,
+        COUNT(*) as count
+      FROM residents 
+      WHERE is_active = 1 AND date_of_birth IS NOT NULL
+      GROUP BY ageGroup
+      ORDER BY 
+        CASE ageGroup
+          WHEN '0-17' THEN 1
+          WHEN '18-30' THEN 2
+          WHEN '31-45' THEN 3
+          WHEN '46-59' THEN 4
+          ELSE 5
+        END
+    `);
 
     res.status(200).json({
       success: true,

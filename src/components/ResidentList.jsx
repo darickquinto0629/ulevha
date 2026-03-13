@@ -10,18 +10,56 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    pageSize: 10,
-    total: 0,
-    pages: 0,
+  const [pagination, setPagination] = useState(() => {
+    const savedPage = localStorage.getItem('residentCurrentPage');
+    return {
+      currentPage: savedPage ? parseInt(savedPage, 10) : 1,
+      pageSize: 10,
+      total: 0,
+      pages: 0,
+    };
   });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  
+  // Track previous filter values to detect actual changes
+  const prevFiltersRef = React.useRef({
+    searchQuery,
+    ageFilter,
+    genderFilter,
+    streetFilter,
+    cardTypeFilter
+  });
 
-  // Reset to page 1 when filters change
+  // Persist current page to localStorage
   useEffect(() => {
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    localStorage.setItem('residentCurrentPage', pagination.currentPage.toString());
+  }, [pagination.currentPage]);
+
+  // Reset to page 1 when filters actually change (not on mount)
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const filtersChanged = 
+      prev.searchQuery !== searchQuery ||
+      prev.ageFilter !== ageFilter ||
+      prev.genderFilter !== genderFilter ||
+      prev.streetFilter !== streetFilter ||
+      prev.cardTypeFilter !== cardTypeFilter;
+    
+    // Update ref with current values
+    prevFiltersRef.current = {
+      searchQuery,
+      ageFilter,
+      genderFilter,
+      streetFilter,
+      cardTypeFilter
+    };
+    
+    // Only reset page if filters actually changed
+    if (filtersChanged) {
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+      localStorage.setItem('residentCurrentPage', '1');
+    }
   }, [searchQuery, ageFilter, genderFilter, streetFilter, cardTypeFilter]);
 
   useEffect(() => {
@@ -75,11 +113,20 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
 
       const data = await response.json();
       setResidents(data.data || []);
-      setPagination(prev => ({
-        ...prev,
-        total: data.pagination?.total || 0,
-        pages: data.pagination?.pages || 0,
-      }));
+      const totalPages = data.pagination?.pages || 1;
+      setPagination(prev => {
+        // Ensure currentPage doesn't exceed total pages
+        const validPage = Math.max(1, Math.min(prev.currentPage, totalPages));
+        if (validPage !== prev.currentPage) {
+          localStorage.setItem('residentCurrentPage', validPage.toString());
+        }
+        return {
+          ...prev,
+          currentPage: validPage,
+          total: data.pagination?.total || 0,
+          pages: totalPages,
+        };
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -161,7 +208,7 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
       const exportData = residents.map((r, index) => ({
         'No.': index + 1,
         'Resident ID': r.resident_id,
-        'Household #': r.household_number,
+        'House #': r.household_number,
         'Last Name': r.last_name,
         'First Name': r.first_name,
         'Middle Name': r.middle_name || '',
@@ -224,8 +271,7 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
                 <thead className="table-header border-b">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold">Name</th>
-                    <th className="px-4 py-2 text-left font-semibold">Household #</th>
-                    <th className="px-4 py-2 text-left font-semibold">Street</th>
+                    <th className="px-4 py-2 text-left font-semibold">Address</th>
                     <th className="px-4 py-2 text-left font-semibold">Age</th>
                     <th className="px-4 py-2 text-left font-semibold">Contact</th>
                     <th className="px-4 py-2 text-left font-semibold">Actions</th>
@@ -233,12 +279,15 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
                 </thead>
                 <tbody>
                   {residents.map((resident) => (
-                    <tr key={resident.id} className="border-b table-row-hover">
+                    <tr key={resident.id} className={`border-b table-row-hover ${resident.is_head_of_family ? 'head-of-family' : ''}`}>
                       <td className="px-4 py-2">
                         {resident.last_name}, {resident.first_name}{resident.middle_name ? `, ${resident.middle_name}` : ''}
                       </td>
-                      <td className="px-4 py-2">{resident.household_number}</td>
-                      <td className="px-4 py-2">{resident.address || '-'}</td>
+                      <td className="px-4 py-2">
+                        {resident.household_number && resident.address 
+                          ? `${resident.household_number} ${resident.address} Street` 
+                          : resident.address ? `${resident.address} Street` : resident.household_number || '-'}
+                      </td>
                       <td className="px-4 py-2">{resident.age}</td>
                       <td className="px-4 py-2">{resident.contact_number || '-'}</td>
                       <td className="px-4 py-2 space-x-2">
@@ -274,7 +323,7 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
               </div>
 
               <div className="pagination-info">
-                Page {pagination.currentPage} of {pagination.pages} ({pagination.total} total)
+                Page {pagination.currentPage} of {pagination.pages || 1} ({pagination.total} total)
               </div>
 
               <div className="pagination-buttons">
@@ -288,7 +337,7 @@ export default function ResidentList({ onEdit, searchQuery = '', ageFilter = '',
                 </Button>
                 <Button
                   onClick={() => handlePageChange(pagination.currentPage + 1)}
-                  disabled={pagination.currentPage === pagination.pages}
+                  disabled={pagination.currentPage >= (pagination.pages || 1)}
                   variant="outline"
                   size="sm"
                 >

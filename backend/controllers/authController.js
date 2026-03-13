@@ -1,35 +1,11 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import db from '../database/db.js';
+import { dbRun, dbGet } from '../database/db.js';
 import { JWT_SECRET, JWT_EXPIRE } from '../config/env.js';
+import { isValidEmail } from '../utils/validators.js';
 
 const SECRET = JWT_SECRET;
 const EXPIRE = JWT_EXPIRE;
-
-// Email validation helper
-const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-// Helper function to promisify database operations
-const dbRun = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve(this);
-    });
-  });
-};
-
-const dbGet = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-};
 
 export const login = async (req, res) => {
   try {

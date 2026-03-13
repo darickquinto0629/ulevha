@@ -86,6 +86,9 @@ export default function StaffDashboard() {
       localStorage.setItem('residentAgeFilter', '');
       localStorage.setItem('residentGenderFilter', '');
       localStorage.setItem('residentCardTypeFilter', '');
+      localStorage.setItem('residentActiveTab', 'list');
+      localStorage.setItem('residentCurrentPage', '1');
+      localStorage.removeItem('residentSelectedResident');
       navigate('/staff/residents');
     }
   };
@@ -97,6 +100,9 @@ export default function StaffDashboard() {
       localStorage.setItem('residentGenderFilter', '');
       localStorage.setItem('residentStreetFilter', '');
       localStorage.setItem('residentCardTypeFilter', '');
+      localStorage.setItem('residentActiveTab', 'list');
+      localStorage.setItem('residentCurrentPage', '1');
+      localStorage.removeItem('residentSelectedResident');
       navigate('/staff/residents');
     }
   };
@@ -110,6 +116,9 @@ export default function StaffDashboard() {
         localStorage.setItem('residentAgeFilter', '');
         localStorage.setItem('residentStreetFilter', '');
         localStorage.setItem('residentCardTypeFilter', '');
+        localStorage.setItem('residentActiveTab', 'list');
+        localStorage.setItem('residentCurrentPage', '1');
+        localStorage.removeItem('residentSelectedResident');
         navigate('/staff/residents');
       }
     }
@@ -129,6 +138,9 @@ export default function StaffDashboard() {
             localStorage.removeItem('residentGenderFilter');
             localStorage.removeItem('residentStreetFilter');
             localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
             navigate('/staff/residents');
           }}
         >
@@ -143,6 +155,9 @@ export default function StaffDashboard() {
             localStorage.removeItem('residentAgeFilter');
             localStorage.removeItem('residentStreetFilter');
             localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
             navigate('/staff/residents');
           }}
         >
@@ -157,6 +172,9 @@ export default function StaffDashboard() {
             localStorage.removeItem('residentAgeFilter');
             localStorage.removeItem('residentStreetFilter');
             localStorage.removeItem('residentCardTypeFilter');
+            localStorage.setItem('residentActiveTab', 'list');
+            localStorage.setItem('residentCurrentPage', '1');
+            localStorage.removeItem('residentSelectedResident');
             navigate('/staff/residents');
           }}
         >

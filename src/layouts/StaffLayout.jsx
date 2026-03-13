@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import StaffDashboard from '@/pages/StaffDashboard';
 import ResidentManagement from '@/pages/ResidentManagement';
+import BusinessEstablishments from '@/pages/BusinessEstablishments';
 
 const navItems = [
   { path: '/staff/dashboard', icon: '📊', label: 'Dashboard' },
   { path: '/staff/residents', icon: '👥', label: 'Resident Management' },
+  { path: '/staff/businesses', icon: '🏪', label: 'Business Establishments' },
   { path: '/staff/add-resident', icon: '➕', label: 'Add New Resident', disabled: true },
   { path: '/staff/import', icon: '📥', label: 'Import Data', disabled: true },
 ];
@@ -23,6 +25,16 @@ export default function StaffLayout() {
     window.location.href = '/login';
   };
 
+  const handleNavClick = (path) => {
+    // Reset to list view when navigating to residents from sidebar
+    if (path.includes('/residents')) {
+      localStorage.setItem('residentActiveTab', 'list');
+      localStorage.setItem('residentCurrentPage', '1');
+      localStorage.removeItem('residentSelectedResident');
+    }
+    navigate(path);
+  };
+
   return (
     <div className="dashboard-layout">
       {/* Sidebar */}
@@ -33,11 +45,11 @@ export default function StaffLayout() {
         </div>
         <nav className="dashboard-sidebar-nav">
           <p className="dashboard-sidebar-section">Main Menu</p>
-          {navItems.slice(0, 2).map((item) => (
+          {navItems.slice(0, 3).map((item) => (
             <div
               key={item.path}
               className={location.pathname === item.path ? 'sidebar-nav-item-active' : 'sidebar-nav-item'}
-              onClick={() => !item.disabled && navigate(item.path)}
+              onClick={() => !item.disabled && handleNavClick(item.path)}
             >
               <span className="sidebar-nav-icon">{item.icon}</span>
               <span className="sidebar-nav-text">{item.label}</span>
@@ -88,6 +100,7 @@ export default function StaffLayout() {
           <Routes>
             <Route path="dashboard" element={<StaffDashboard />} />
             <Route path="residents" element={<ResidentManagement />} />
+            <Route path="businesses" element={<BusinessEstablishments />} />
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>
         </main>

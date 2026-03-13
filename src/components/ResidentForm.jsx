@@ -18,10 +18,18 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
     address: '',
     contact_number: '',
     civil_status: 'Single',
+    occupation: '',
+    family_position: '',
     religion: '',
     educational_attainment: 'Elementary',
     educational_attainment_other: '',
     card_types: [],
+    is_head_of_family: false,
+    is_business_owner: false,
+    business_name: '',
+    business_type: '',
+    business_address: '',
+    business_phone: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -29,11 +37,45 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
 
   useEffect(() => {
     if (resident) {
+      // Check if resident has any business data
+      const hasBusinessData = Boolean(
+        resident.is_business_owner || 
+        resident.business_name || 
+        resident.business_type || 
+        resident.business_address ||
+        resident.business_phone
+      );
+      
+      // Ensure all fields default to empty string (not null) to avoid controlled/uncontrolled warnings
       setFormData({
-        ...resident,
+        household_number: resident.household_number || '',
+        philsys_number: resident.philsys_number || '',
+        first_name: resident.first_name || '',
+        last_name: resident.last_name || '',
+        middle_name: resident.middle_name || '',
+        gender: resident.gender || 'M',
+        date_of_birth: resident.date_of_birth || '',
+        birth_place: resident.birth_place || '',
+        address: resident.address || '',
+        contact_number: resident.contact_number || '',
+        civil_status: resident.civil_status || 'Single',
+        occupation: resident.occupation || '',
+        family_position: resident.family_position || '',
+        religion: resident.religion || '',
+        educational_attainment: resident.educational_attainment || 'Elementary',
+        educational_attainment_other: resident.educational_attainment_other || '',
         card_types: typeof resident.card_types === 'string' 
           ? JSON.parse(resident.card_types || '[]') 
           : (resident.card_types || []),
+        is_head_of_family: resident.is_head_of_family || false,
+        is_business_owner: hasBusinessData,
+        business_name: resident.business_name || '',
+        business_type: resident.business_type || '',
+        business_address: resident.business_address || '',
+        business_phone: resident.business_phone || '',
+        // Keep id and resident_id for updates
+        id: resident.id,
+        resident_id: resident.resident_id || '',
       });
     }
   }, [resident]);
@@ -41,7 +83,7 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.household_number) newErrors.household_number = 'Household Number is required';
+    if (!formData.household_number) newErrors.household_number = 'House Number is required';
     if (!formData.first_name) newErrors.first_name = 'First Name is required';
     if (!formData.last_name) newErrors.last_name = 'Last Name is required';
     if (!formData.gender) newErrors.gender = 'Gender is required';
@@ -58,6 +100,27 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
+    
+    // For house number field, only allow numbers and prevent leading zeros
+    if (name === 'household_number') {
+      const numericValue = value.replace(/[^0-9]/g, '').replace(/^0+/, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue,
+      }));
+      return;
+    }
+    
+    // For phone number fields, only allow numbers
+    if (name === 'business_phone' || name === 'contact_number') {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue,
+      }));
+      return;
+    }
+    
     // Convert text fields to uppercase (exclude date, tel, select, radio)
     const shouldUppercase = type === 'text' || type === 'textarea';
     const processedValue = shouldUppercase ? value.toUpperCase() : value;
@@ -109,6 +172,13 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    // Debug log
+    console.log('[FORM] Submitting formData:', {
+      is_business_owner: formData.is_business_owner,
+      business_name: formData.business_name,
+      business_type: formData.business_type,
+      business_address: formData.business_address,
+    });
     await onSubmit(formData);
   };
 
@@ -126,14 +196,15 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
           {/* Household and IDs */}
           <div className="grid-2-cols">
             <div className="form-group">
-              <label className="form-label">Household Number *</label>
+              <label className="form-label">House Number *</label>
               <input
                 type="text"
                 name="household_number"
                 value={formData.household_number}
                 onChange={handleInputChange}
                 className={inputClass('household_number')}
-                placeholder="e.g., 001"
+                placeholder="e.g., 123"
+                inputMode="numeric"
               />
               {errors.household_number && <p className="form-error">{errors.household_number}</p>}
             </div>
@@ -274,6 +345,32 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
             </div>
           </div>
 
+          {/* Occupation and Family Position */}
+          <div className="grid-2-cols">
+            <div className="form-group">
+              <label className="form-label">Occupation / Source of Income</label>
+              <input
+                type="text"
+                name="occupation"
+                value={formData.occupation}
+                onChange={handleInputChange}
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Position in the Family</label>
+              <input
+                type="text"
+                name="family_position"
+                value={formData.family_position}
+                onChange={handleInputChange}
+                placeholder="ie: Mother, Father"
+                className="form-input"
+              />
+            </div>
+          </div>
+
           {/* Contact and Religion */}
           <div className="grid-2-cols">
             <div className="form-group">
@@ -351,7 +448,93 @@ export default function ResidentForm({ resident, onSubmit, isLoading, onAddNew }
                 ))}
               </div>
             </div>
+
+            <div className="form-group">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="is_head_of_family"
+                  checked={formData.is_head_of_family || false}
+                  onChange={(e) => setFormData(prev => ({ ...prev, is_head_of_family: e.target.checked }))}
+                  className="mr-2 w-4 h-4"
+                />
+                <span className="text-sm">Head of the Family?</span>
+              </label>
+            </div>
           </div>
+
+          {/* Business Owner Section */}
+          <div className="form-group">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="is_business_owner"
+                checked={formData.is_business_owner || false}
+                onChange={(e) => setFormData(prev => ({ ...prev, is_business_owner: e.target.checked }))}
+                className="mr-2 w-4 h-4"
+              />
+              <span className="form-label mb-0">Business Owner</span>
+            </label>
+          </div>
+
+          {/* Business Details (shown when is_business_owner is checked) */}
+          {formData.is_business_owner && (
+            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700">Business Information</h3>
+              
+              <div className="grid-2-cols">
+                <div className="form-group">
+                  <label className="form-label">Name of Establishment</label>
+                  <input
+                    type="text"
+                    name="business_name"
+                    value={formData.business_name || ''}
+                    onChange={handleInputChange}
+                    className="form-input"
+                    placeholder="Enter business name"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Nature of Establishment</label>
+                  <input
+                    type="text"
+                    name="business_type"
+                    value={formData.business_type || ''}
+                    onChange={handleInputChange}
+                    className="form-input"
+                    placeholder="e.g., Sari-sari Store, Carinderia"
+                  />
+                </div>
+              </div>
+
+              <div className="grid-2-cols">
+                <div className="form-group">
+                  <label className="form-label">Business Address </label>
+                  <input
+                    type="text"
+                    name="business_address"
+                    value={formData.business_address || ''}
+                    onChange={handleInputChange}
+                    className="form-input"
+                    placeholder="Leave blank if the same as your residential address."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Business Phone Number</label>
+                  <input
+                    type="tel"
+                    name="business_phone"
+                    value={formData.business_phone || ''}
+                    onChange={handleInputChange}
+                    className="form-input"
+                    placeholder="Enter business phone number"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Submit Button */}
           <div className="flex gap-2">

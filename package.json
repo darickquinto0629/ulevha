@@ -1,7 +1,7 @@
 {
   "name": "ulevha",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "main": "electron/main.cjs",
   "author": "Ulevha Team",
@@ -92,7 +92,6 @@
     ],
     "win": {
       "target": [
-        "portable",
         "nsis"
       ],
       "signAndEditExecutable": false
@@ -101,9 +100,6 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "artifactName": "Ulevha-Setup-${version}.exe"
-    },
-    "portable": {
-      "artifactName": "Ulevha-Portable-${version}.exe"
     },
     "mac": {
       "target": [

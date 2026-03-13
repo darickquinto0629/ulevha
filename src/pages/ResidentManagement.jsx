@@ -97,6 +97,14 @@ export default function ResidentManagement() {
     setIsSubmitting(true);
     setMessage('');
 
+    // Debug: Log what's being sent
+    console.log('[ResidentManagement] Submitting to API:', {
+      is_business_owner: formData.is_business_owner,
+      business_name: formData.business_name,
+      business_type: formData.business_type,
+      business_address: formData.business_address,
+    });
+
     try {
       const apiUrl = getApiUrl();
       const isEditing = selectedResident?.id;
@@ -105,6 +113,8 @@ export default function ResidentManagement() {
         : `${apiUrl}/residents`;
 
       const method = isEditing ? 'PUT' : 'POST';
+      
+      console.log('[ResidentManagement] API call:', method, endpoint);
 
       const response = await fetch(endpoint, {
         method,
@@ -116,19 +126,23 @@ export default function ResidentManagement() {
         body: JSON.stringify(formData),
       });
 
+      console.log('[ResidentManagement] Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || errorData.message || 'Failed to save resident');
       }
 
       const responseData = await response.json();
+      console.log('[ResidentManagement] Response data:', responseData);
 
       setMessage(`Resident ${isEditing ? 'updated' : 'added'} successfully!`);
       setSuccessMessage(`Resident ${isEditing ? 'updated' : 'added'} successfully!`);
       setShowSuccessPopup(true);
       
       if (isEditing) {
-        // Stay on edit form when updating
+        // Stay on edit form when updating - update selectedResident with new data
+        setSelectedResident({ ...formData, id: selectedResident.id });
         triggerListRefresh();
       } else {
         // Switch to edit mode with the newly created resident
@@ -141,6 +155,7 @@ export default function ResidentManagement() {
       // Clear inline message after 3 seconds
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
+      console.error('[ResidentManagement] Error:', err);
       setMessage(`Error: ${err.message}`);
     } finally {
       setIsSubmitting(false);
@@ -207,7 +222,7 @@ export default function ResidentManagement() {
             <div className="flex-1 min-w-[200px]">
               <input
                 type="text"
-                placeholder="Search by name, household #, resident ID, or contact..."
+                placeholder="Search by name, house #, resident ID, or contact..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="form-input w-full"
@@ -278,8 +293,6 @@ export default function ResidentManagement() {
             </div>
             {(searchQuery || ageFilter || genderFilter || streetFilter || cardTypeFilter) && (
               <Button
-                variant="outline"
-                size="sm"
                 onClick={() => {
                   setSearchQuery('');
                   setAgeFilter('');

@@ -289,6 +289,14 @@
     @apply hover:bg-gray-50 transition-colors;
   }
 
+  .head-of-family {
+    @apply bg-yellow-50 font-medium;
+  }
+
+  .head-of-family:hover {
+    @apply bg-yellow-100;
+  }
+
   /* Badge Variants */
   .badge-admin {
     @apply bg-purple-100 text-purple-800;
